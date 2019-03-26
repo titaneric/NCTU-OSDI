@@ -16,11 +16,21 @@ static struct Trapframe *last_tf;
  *       function addresses can't be represented in relocation records.
  */
 
+#define IDT_SIZE 256
+struct idt_data
+{
+	struct Gatedesc desc;
+};
 
+struct Gatedesc IDT[IDT_SIZE];
+struct Pseudodesc desc = {
+    .pd_lim = (uint16_t)(sizeof(IDT) - 1),
+    .pd_base = (uint32_t)IDT
+};
 /* For debugging */
 static const char *trapname(int trapno)
 {
-	static const char * const excnames[] = {
+	static const char *const excnames[] = {
 		"Divide error",
 		"Debug",
 		"Non-Maskable Interrupt",
@@ -40,10 +50,9 @@ static const char *trapname(int trapno)
 		"x87 FPU Floating-Point Error",
 		"Alignment Check",
 		"Machine-Check",
-		"SIMD Floating-Point Exception"
-	};
+		"SIMD Floating-Point Exception"};
 
-	if (trapno < sizeof(excnames)/sizeof(excnames[0]))
+	if (trapno < sizeof(excnames) / sizeof(excnames[0]))
 		return excnames[trapno];
 	if (trapno == T_SYSCALL)
 		return "System call";
@@ -53,8 +62,7 @@ static const char *trapname(int trapno)
 }
 
 /* For debugging */
-void
-print_trapframe(struct Trapframe *tf)
+void print_trapframe(struct Trapframe *tf)
 {
 	cprintf("TRAP frame at %p \n");
 	print_regs(&tf->tf_regs);
@@ -72,23 +80,23 @@ print_trapframe(struct Trapframe *tf)
 	// PR=a protection violation caused the fault (NP=page not present).
 	if (tf->tf_trapno == T_PGFLT)
 		cprintf(" [%s, %s, %s]\n",
-			tf->tf_err & 4 ? "user" : "kernel",
-			tf->tf_err & 2 ? "write" : "read",
-			tf->tf_err & 1 ? "protection" : "not-present");
+				tf->tf_err & 4 ? "user" : "kernel",
+				tf->tf_err & 2 ? "write" : "read",
+				tf->tf_err & 1 ? "protection" : "not-present");
 	else
 		cprintf("\n");
 	cprintf("  eip  0x%08x\n", tf->tf_eip);
 	cprintf("  cs   0x----%04x\n", tf->tf_cs);
 	cprintf("  flag 0x%08x\n", tf->tf_eflags);
-	if ((tf->tf_cs & 3) != 0) {
+	if ((tf->tf_cs & 3) != 0)
+	{
 		cprintf("  esp  0x%08x\n", tf->tf_esp);
 		cprintf("  ss   0x----%04x\n", tf->tf_ss);
 	}
 }
 
 /* For debugging */
-void
-print_regs(struct PushRegs *regs)
+void print_regs(struct PushRegs *regs)
 {
 	cprintf("  edi  0x%08x\n", regs->reg_edi);
 	cprintf("  esi  0x%08x\n", regs->reg_esi);
@@ -103,7 +111,7 @@ print_regs(struct PushRegs *regs)
 static void
 trap_dispatch(struct Trapframe *tf)
 {
-  /* TODO: Handle specific interrupts.
+	/* TODO: Handle specific interrupts.
    *       You need to check the interrupt number in order to tell
    *       which interrupt is currently happening since every interrupt
    *       comes to this function called by default_trap_handler.
@@ -117,9 +125,23 @@ trap_dispatch(struct Trapframe *tf)
    *       We prepared the keyboard handler and timer handler for you
    *       already. Please reference in kernel/kbd.c and kernel/timer.c
    */
+	//    */
+	extern void kbd_intr();
+	extern void timer_handler();
 
-	// Unexpected trap: The user process or the kernel has a bug.
-	print_trapframe(tf);
+	if (tf->tf_trapno == (IRQ_OFFSET + IRQ_KBD))
+	{
+		kbd_intr();
+	}
+	else if (tf->tf_trapno == (IRQ_OFFSET + IRQ_TIMER))
+	{
+		timer_handler();
+	}
+	else
+	{
+		// Unexpected trap: The user process or the kernel has a bug.
+		print_trapframe(tf);
+	}
 }
 
 /* 
@@ -135,10 +157,9 @@ void default_trap_handler(struct Trapframe *tf)
 	trap_dispatch(tf);
 }
 
-
 void trap_init()
 {
-  /* TODO: You should initialize the interrupt descriptor table.
+	/* TODO: You should initialize the interrupt descriptor table.
    *       You should setup at least keyboard interrupt and timer interrupt as
    *       the lab's requirement.
    *
@@ -160,8 +181,15 @@ void trap_init()
    *       come in handy for you when filling up the argument of "lidt"
    */
 
-	/* Keyboard interrupt setup */
-	/* Timer Trap setup */
-  /* Load IDT */
+	extern void keyboard_int();
+	extern void timer_int();
 
+	/* Keyboard interrupt setup */
+	SETGATE(IDT[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, keyboard_int, 0);
+
+	/* Timer Trap setup */
+	SETGATE(IDT[IRQ_OFFSET + IRQ_TIMER], 0, GD_KT, timer_int, 0);
+
+	/* Load IDT */
+	lidt(&desc);
 }
