@@ -17,16 +17,15 @@ static struct Trapframe *last_tf;
  */
 
 #define IDT_SIZE 256
-struct idt_data
-{
-	struct Gatedesc desc;
-};
+
+extern void kbd_intr();
+extern void timer_handler();
+void (*handler[])(void) = {timer_handler, kbd_intr};
 
 struct Gatedesc IDT[IDT_SIZE];
 struct Pseudodesc desc = {
-    .pd_lim = (uint16_t)(sizeof(IDT) - 1),
-    .pd_base = (uint32_t)IDT
-};
+	.pd_lim = (uint16_t)(sizeof(IDT) - 1),
+	.pd_base = (uint32_t)IDT};
 /* For debugging */
 static const char *trapname(int trapno)
 {
@@ -126,16 +125,11 @@ trap_dispatch(struct Trapframe *tf)
    *       already. Please reference in kernel/kbd.c and kernel/timer.c
    */
 	//    */
-	extern void kbd_intr();
-	extern void timer_handler();
 
-	if (tf->tf_trapno == (IRQ_OFFSET + IRQ_KBD))
+	uint32_t trap_nr = tf->tf_trapno - IRQ_OFFSET;
+	if (trap_nr >= IRQ_TIMER && trap_nr <= IRQ_KBD)
 	{
-		kbd_intr();
-	}
-	else if (tf->tf_trapno == (IRQ_OFFSET + IRQ_TIMER))
-	{
-		timer_handler();
+		(*handler[trap_nr])();
 	}
 	else
 	{
