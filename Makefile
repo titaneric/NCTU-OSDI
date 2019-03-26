@@ -6,8 +6,8 @@ OBJCOPY = objcopy
 OBJDUMP = objdump
 NM = nm
 
-CFLAGS = -m32 -Wall -O -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin 
-
+CFLAGS = -m32 -Wall -O -fstrength-reduce -fomit-frame-pointer -finline-functions -nostdinc -fno-builtin -fno-stack-protector
+LDFLAGS += -m elf_i386
 # Add debug symbol
 CFLAGS += -g
 
