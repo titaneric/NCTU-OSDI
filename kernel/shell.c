@@ -13,7 +13,8 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-	{ "print_tick", "Display system tick", print_tick }
+	{ "print_tick", "Display system tick", print_tick },
+	{ "chgcolor", "Change shell color", chgcolor }
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
@@ -41,7 +42,25 @@ int print_tick(int argc, char **argv)
 {
 	cprintf("Now tick = %d\n", get_tick());
 }
-
+int chgcolor(int argc, char **argv)
+{
+	if (argc < 2)
+	{
+		cprintf("Not enough arguments!\n");
+	}
+	char forecolor = argv[1][0];
+	if (forecolor >= '0' && forecolor <= '9')
+	{
+		forecolor -= '0';
+	}
+	else if (forecolor >= 'A' && forecolor <= 'F')
+	{
+		forecolor = forecolor - 'A' + 10;
+	}
+	// char backcolor = argv[1][0];
+	settextcolor(forecolor, 0);
+	cprintf("Change color %d\n", forecolor);
+}
 #define WHITESPACE "\t\r\n "
 #define MAXARGS 16
 
