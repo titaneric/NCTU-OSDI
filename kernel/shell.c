@@ -3,21 +3,20 @@
 #include <inc/shell.h>
 #include <inc/timer.h>
 
-struct Command {
+struct Command
+{
 	const char *name;
 	const char *desc;
 	// return -1 to force monitor to exit
-	int (*func)(int argc, char** argv);
+	int (*func)(int argc, char **argv);
 };
 
 static struct Command commands[] = {
-	{ "help", "Display this list of commands", mon_help },
-	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-	{ "print_tick", "Display system tick", print_tick },
-	{ "chgcolor", "Change shell color", chgcolor }
-};
-#define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
-
+	{"help", "Display this list of commands", mon_help},
+	{"kerninfo", "Display information about the kernel", mon_kerninfo},
+	{"print_tick", "Display system tick", print_tick},
+	{"chgcolor", "Change shell color", chgcolor}};
+#define NCOMMANDS (sizeof(commands) / sizeof(commands[0]))
 
 int mon_help(int argc, char **argv)
 {
@@ -36,6 +35,10 @@ int mon_kerninfo(int argc, char **argv)
    *       Use PROVIDE inside linker script and calculate the
    *       offset.
    */
+	extern char kernel_load_addr[], etext[], data[], end[];
+	cprintf("Kernel code base start=0x%x size=%d\n", kernel_load_addr, etext - kernel_load_addr);
+	cprintf("Kernel data base start=0x%x size=%d\n", data, end - data);
+	cprintf("Kernel executable memory footprint: %dKB\n", (end - kernel_load_addr) >> 10);
 	return 0;
 }
 int print_tick(int argc, char **argv)
@@ -78,7 +81,8 @@ static int runcmd(char *buf)
 	// Parse the command buffer into whitespace-separated arguments
 	argc = 0;
 	argv[argc] = 0;
-	while (1) {
+	while (1)
+	{
 		// gobble whitespace
 		while (*buf && strchr(WHITESPACE, *buf))
 			*buf++ = 0;
@@ -86,7 +90,8 @@ static int runcmd(char *buf)
 			break;
 
 		// save and scan past next arg
-		if (argc == MAXARGS-1) {
+		if (argc == MAXARGS - 1)
+		{
 			cprintf("Too many arguments (max %d)\n", MAXARGS);
 			return 0;
 		}
@@ -99,7 +104,8 @@ static int runcmd(char *buf)
 	// Lookup and invoke the command
 	if (argc == 0)
 		return 0;
-	for (i = 0; i < NCOMMANDS; i++) {
+	for (i = 0; i < NCOMMANDS; i++)
+	{
 		if (strcmp(argv[0], commands[i].name) == 0)
 			return commands[i].func(argc, argv);
 	}
@@ -112,7 +118,7 @@ void shell()
 	cprintf("Welcome to the OSDI course!\n");
 	cprintf("Type 'help' for a list of commands.\n");
 
-	while(1)
+	while (1)
 	{
 		buf = readline("OSDI> ");
 		if (buf != NULL)
