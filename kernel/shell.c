@@ -47,6 +47,7 @@ int chgcolor(int argc, char **argv)
 	if (argc < 2)
 	{
 		cprintf("Not enough arguments!\n");
+		return 1;
 	}
 	char forecolor = argv[1][0];
 	if (forecolor >= '0' && forecolor <= '9')
@@ -57,9 +58,13 @@ int chgcolor(int argc, char **argv)
 	{
 		forecolor = forecolor - 'A' + 10;
 	}
-	// char backcolor = argv[1][0];
+	else
+	{
+		forecolor = 15;
+	}
 	settextcolor(forecolor, 0);
 	cprintf("Change color %d\n", forecolor);
+	return 0;
 }
 #define WHITESPACE "\t\r\n "
 #define MAXARGS 16
