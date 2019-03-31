@@ -113,8 +113,8 @@ static uint8_t *charcode[4] = {
 static int
 kbd_proc_data(void)
 {
-	int c;
-	uint8_t data;
+	volatile int c;
+	volatile uint8_t data;
 	static uint32_t shift;
 
 	if ((inb(KBSTATP) & KBS_DIB) == 0)
