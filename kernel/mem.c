@@ -283,6 +283,18 @@ struct PageInfo *
 page_alloc(int alloc_flags)
 {
     /* TODO */
+	if (alloc_flags & ALLOC_ZERO)
+	{
+		PageInfo *alloc_page;
+		alloc_page->pp_link = NULL;
+		void* addr = page2kva(alloc_page);
+		memset(addr, '\0', PGSIZE);
+		return alloc_page
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 //
@@ -352,6 +364,20 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
     /* TODO */
+	pde_t *pte = pgdir + PDX(va);
+	if (pte == NULL)
+	{
+		if (create)
+		{
+			PageInfo* new_page = page_alloc();
+			return page2pa(new_page);
+		}
+		else
+		{
+			return NULL;
+		}
+	}
+	return pte + PTX(va);
 }
 
 //
