@@ -147,7 +147,7 @@ mem_init(void)
 	// to initialize all fields of each struct PageInfo to 0.
 	// Your code goes here:
     /* TODO */
-
+	memset(pages, 0, npages * sizeof(struct PageInfo));
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -296,6 +296,22 @@ page_free(struct PageInfo *pp)
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
     /* TODO */
+	if (pp->pp_ref != 0)
+	{
+		panic("ref count is not zero!");
+	}
+	else
+	{
+		if (pp->pp_link != NULL)
+		{
+			panic("link is not NULL!");
+		}
+		else
+		{
+			page_free_list = pp->pp_link;
+			pp->pp_link = NULL;
+		}
+	}
 }
 
 //
