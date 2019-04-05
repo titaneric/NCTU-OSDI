@@ -289,7 +289,7 @@ page_alloc(int alloc_flags)
 		alloc_page->pp_link = NULL;
 		void* addr = page2kva(alloc_page);
 		memset(addr, '\0', PGSIZE);
-		return alloc_page
+		return alloc_page;
 	}
 	else
 	{
@@ -320,8 +320,7 @@ page_free(struct PageInfo *pp)
 		}
 		else
 		{
-			page_free_list = pp->pp_link;
-			pp->pp_link = NULL;
+			page_free_list = pp;
 		}
 	}
 }
