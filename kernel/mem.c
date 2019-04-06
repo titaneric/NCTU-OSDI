@@ -184,6 +184,7 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
     /* TODO */
+    boot_map_region(kern_pgdir, KSTACKTOP-PTSIZE, PTSIZE, PADDR(pages), (PTE_U | PTE_P));
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -194,6 +195,7 @@ mem_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
     /* TODO */
+    boot_map_region(kern_pgdir, KERNBASE, 1 << 32, 0, (PTE_U | PTE_P));
 
 	//////////////////////////////////////////////////////////////////////
 	// Map VA range [IOPHYSMEM, EXTPHYSMEM) to PA range [IOPHYSMEM, EXTPHYSMEM)
@@ -368,7 +370,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 	{
 		if (create)
 		{
-			PageInfo* new_page = page_alloc();
+			struct PageInfo  *new_page = page_alloc(1);
 			return page2pa(new_page);
 		}
 		else
@@ -394,6 +396,13 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
     /* TODO */
+	int i;
+	for(i=0;i<size / PGSIZE;i++)
+	{
+		pte_t * pte = pgdir_walk(pgdir, (void *) va, 1);
+		pgdir[PDX(pa)] = PADDR(pte) | perm | PTE_P;
+
+	}
 }
 
 //
