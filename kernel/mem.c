@@ -287,7 +287,7 @@ page_alloc(int alloc_flags)
     /* TODO */
 	if (alloc_flags & ALLOC_ZERO)
 	{
-		PageInfo *alloc_page;
+		struct PageInfo *alloc_page;
 		alloc_page->pp_link = NULL;
 		void* addr = page2kva(alloc_page);
 		memset(addr, '\0', PGSIZE);
