@@ -365,12 +365,12 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
     /* TODO */
-	pde_t *pte = pgdir + PDX(va);
-	if (pte == NULL)
+	pde_t *pde = *pgdir + PDX(va);
+	if (pde == NULL)
 	{
 		if (create)
 		{
-			struct PageInfo  *new_page = page_alloc(1);
+			struct PageInfo *new_page = page_alloc(1);
 			return page2pa(new_page);
 		}
 		else
@@ -378,7 +378,8 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 			return NULL;
 		}
 	}
-	return pte + PTX(va);
+	pte_t *pte = *pde + PTX(va);
+	return pte;
 }
 
 //
@@ -397,11 +398,10 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 {
     /* TODO */
 	int i;
-	for(i=0;i<size / PGSIZE;i++)
+	for(i = 0;i < size / PGSIZE;i++)
 	{
-		pte_t * pte = pgdir_walk(pgdir, (void *) va, 1);
-		pgdir[PDX(pa)] = PADDR(pte) | perm | PTE_P;
-
+		pte_t *pte = pgdir_walk(pgdir, (void *) va, 1);
+		pgdir[pte] = pa | perm | PTE_P;
 	}
 }
 
