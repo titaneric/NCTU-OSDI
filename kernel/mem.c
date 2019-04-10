@@ -368,6 +368,11 @@ page_decref(struct PageInfo* pp)
 		page_free(pp);
 }
 
+bool pteExist(pde_t *pte)
+{
+	return *pte & PTE_P;
+}
+
 // Given 'pgdir', a pointer to a page directory, pgdir_walk returns
 // a pointer to the page table entry (PTE) for linear address 'va'.
 // This requires walking the two-level page table structure.
@@ -396,7 +401,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 	// Fill this function in
 	pde_t *pte = pgdir + PDX(va);	
 	pte_t *page_table_base;
-	if (*pte & PTE_P)
+	if (pteExist(pte))
 	{
 		page_table_base = KADDR(PTE_ADDR(*pte));
 	}
@@ -479,7 +484,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	if (pte == NULL)
 		return -E_NO_MEM;
 	
-	if (*pte & PTE_P) 
+	if (pteExist(pte)) 
 	{		
 		is_same_pp = (PTE_ADDR(*pte) == page2pa(pp));
 		
@@ -510,7 +515,7 @@ struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
     pte_t *pte = pgdir_walk(pgdir, va, 0);
-	if (pte == NULL || !(*pte & PTE_P))
+	if (pte == NULL || !pteExist(pte))
 		return NULL;
 	if (*pte_store)
 	{
