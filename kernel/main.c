@@ -24,8 +24,8 @@ void kernel_main(void)
 	__asm __volatile("sti");
 
     /* Test for page fault handler */
-    // ptr = (int*)(0x12345678);
-    //*ptr = 1;
+    ptr = (int*)(0x12345678);
+    *ptr = 1;
 
 	shell();
 }

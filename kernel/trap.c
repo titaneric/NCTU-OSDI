@@ -1,4 +1,5 @@
 #include <kernel/trap.h>
+#include <inc/assert.h>
 #include <inc/mmu.h>
 #include <inc/x86.h>
 
@@ -107,6 +108,13 @@ void print_regs(struct PushRegs *regs)
 	cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
+static void page_fault_handler()
+{
+	uint32_t fault_addr = rcr2();
+	cprintf("[0756723] Page fault @ %p", fault_addr);
+	while(1);
+}
+
 static void
 trap_dispatch(struct Trapframe *tf)
 {
@@ -130,6 +138,10 @@ trap_dispatch(struct Trapframe *tf)
 	if (trap_nr >= IRQ_TIMER && trap_nr <= IRQ_KBD)
 	{
 		(*handler[trap_nr])();
+	}
+	else if (tf->tf_trapno == T_PGFLT)
+	{
+		page_fault_handler();
 	}
 	else
 	{
@@ -177,6 +189,9 @@ void trap_init()
 
 	extern void keyboard_int();
 	extern void timer_int();
+	extern void page_fault_trap();
+
+	SETGATE(IDT[T_PGFLT], 0, GD_KT, page_fault_trap, 0);
 
 	/* Keyboard interrupt setup */
 	SETGATE(IDT[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, keyboard_int, 0);

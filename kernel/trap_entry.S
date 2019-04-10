@@ -22,6 +22,7 @@
  *       The Trap number are declared in inc/trap.h which might come in handy
  *       when declaring interface for ISRs.
  */
+TRAPHANDLER_NOEC(page_fault_trap, T_PGFLT)
 TRAPHANDLER_NOEC(keyboard_int, IRQ_OFFSET + IRQ_KBD)
 TRAPHANDLER_NOEC(timer_int, IRQ_OFFSET + IRQ_TIMER)
 
