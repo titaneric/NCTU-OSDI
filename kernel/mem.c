@@ -475,7 +475,7 @@ int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
     pde_t *pte = pgdir_walk(pgdir, va, 0);
-	int is_same_pp = 0;
+	bool is_same_pp = false;
 	if (pte == NULL)
 	{
 		pte = pgdir_walk(pgdir, va, 1);
@@ -484,8 +484,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	}
 	else if (*pte & PTE_P) 
 	{		
-		if (PTE_ADDR(*pte) == page2pa(pp))
-			is_same_pp = 1;
+		is_same_pp = (PTE_ADDR(*pte) == page2pa(pp));
 		
 		if (!is_same_pp)
 			page_remove(pgdir, va);	
