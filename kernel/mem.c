@@ -482,16 +482,13 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 			if (pte == NULL)
 				return -E_NO_MEM;
 	}
-	else 
-	{
-		if (*pte & PTE_P)
-		{
-			if (PTE_ADDR(*pte) == page2pa(pp))
-				is_same_pp = 1;
-			
-			if (!is_same_pp)
-				page_remove(pgdir, va);
-		}
+	else if (*pte & PTE_P) 
+	{		
+		if (PTE_ADDR(*pte) == page2pa(pp))
+			is_same_pp = 1;
+		
+		if (!is_same_pp)
+			page_remove(pgdir, va);	
 	}
 	if (!is_same_pp)
 	{
