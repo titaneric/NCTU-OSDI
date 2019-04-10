@@ -162,7 +162,6 @@ mem_init(void)
 
 	check_page_alloc();
 	check_page();
-	while (1);
 
 	//////////////////////////////////////////////////////////////////////
 	// Now we set up virtual memory
@@ -188,7 +187,7 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
     /* TODO */
-    boot_map_region(kern_pgdir, KSTACKTOP-PTSIZE, PTSIZE, PADDR(pages), (PTE_U | PTE_P));
+    boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -199,7 +198,7 @@ mem_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
     /* TODO */
-    boot_map_region(kern_pgdir, KERNBASE, 1 << 32, 0, (PTE_U | PTE_P));
+    boot_map_region(kern_pgdir, KERNBASE, (1<<32)-KERNBASE, 0, PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map VA range [IOPHYSMEM, EXTPHYSMEM) to PA range [IOPHYSMEM, EXTPHYSMEM)
@@ -786,8 +785,6 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 static void
 check_page(void)
 {
-	cprintf("check_page() in!\n");
-
 	struct PageInfo *pp, *pp0, *pp1, *pp2;
 	struct PageInfo *fl;
 	pte_t *ptep, *ptep1;
