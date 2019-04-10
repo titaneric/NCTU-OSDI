@@ -474,15 +474,12 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
-    pde_t *pte = pgdir_walk(pgdir, va, 0);
+    pde_t *pte = pgdir_walk(pgdir, va, 1);
 	bool is_same_pp = false;
 	if (pte == NULL)
-	{
-		pte = pgdir_walk(pgdir, va, 1);
-			if (pte == NULL)
-				return -E_NO_MEM;
-	}
-	else if (*pte & PTE_P) 
+		return -E_NO_MEM;
+	
+	if (*pte & PTE_P) 
 	{		
 		is_same_pp = (PTE_ADDR(*pte) == page2pa(pp));
 		
