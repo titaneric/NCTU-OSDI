@@ -192,7 +192,7 @@ void trap_init()
 	extern void timer_int();
 	extern void page_fault_trap();
 
-	SETGATE(IDT[T_PGFLT], 0, GD_KT, page_fault_trap, 0);
+	SETGATE(IDT[T_PGFLT], 1, GD_KT, page_fault_trap, 0);
 
 	/* Keyboard interrupt setup */
 	SETGATE(IDT[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, keyboard_int, 0);
