@@ -111,7 +111,8 @@ void print_regs(struct PushRegs *regs)
 static void page_fault_handler()
 {
 	uint32_t fault_addr = rcr2();
-	cprintf("[0756723] Page fault @ %p", fault_addr);
+	const char student_id[] = "0756723";
+	cprintf("[%s] Page fault @ %p", student_id, fault_addr);
 	while(1);
 }
 

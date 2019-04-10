@@ -350,7 +350,7 @@ page_free(struct PageInfo *pp)
 		}
 		else
 		{
-			// return to free list
+			// return to free list by inserting to first node
 			pp->pp_link = page_free_list;
 			page_free_list = pp;
 		}
@@ -394,7 +394,6 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-	// pde_t *pte = pgdir + PDX(va);
 	pde_t *pte = pgdir + PDX(va);	
 	pte_t *page_table_base;
 	if (*pte & PTE_P)
@@ -476,6 +475,7 @@ int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
     pde_t *pte = pgdir_walk(pgdir, va, 0);
+	int is_same_pp = 0;
 	if (pte == NULL)
 	{
 		pte = pgdir_walk(pgdir, va, 1);
@@ -486,17 +486,19 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	{
 		if (*pte & PTE_P)
 		{
-			page_remove(pgdir, va);
-		}
-		if (page_free_list == pp)
-		{
-			page_free_list = page_free_list->pp_link;
+			if (PTE_ADDR(*pte) == page2pa(pp))
+				is_same_pp = 1;
+			
+			if (!is_same_pp)
+				page_remove(pgdir, va);
 		}
 	}
-	
+	if (!is_same_pp)
+	{
+		pp->pp_ref++;
+		tlb_invalidate(pgdir, va);
+	}
 	*pte = page2pa(pp) | perm | PTE_P;
-	pp->pp_ref++;
-	tlb_invalidate(pgdir, va);
 	return 0;
 }
 
