@@ -243,15 +243,15 @@ int sys_fork()
 			pte_t *dest_pte = pgdir_walk(tasks[pid].pgdir, va - PGSIZE, 0);
 
 			if (source_pte == NULL)
-				return -1;
+				panic("Source PTE not found");
 			if (dest_pte == NULL)
-				return -1;
-			
+				panic("Dest PTE not found");
+
 			if (!pteExist(source_pte))
-				return -1;
-			
+				panic("Source PTE not present");
+
 			if (!pteExist(dest_pte))
-				return -1;
+				panic("Dest PTE not present");
 
 			memcpy(KADDR(PTE_ADDR(*dest_pte)), KADDR(PTE_ADDR(*source_pte)), PGSIZE);
 		}
