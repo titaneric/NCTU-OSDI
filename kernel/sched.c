@@ -27,7 +27,7 @@ void sched_yield(void)
 	int cur_task_id = cur_task->task_id;
 	int picked_task_id = cur_task_id;
 	int task_it;
-	for(task_it = 0; task_it < NR_TASKS ; task_it++)
+	for(task_it = 1; task_it < NR_TASKS ; task_it++)
 	{
 		int task_id = (cur_task_id + task_it) % NR_TASKS;
 		if (tasks[task_id].state == TASK_RUNNABLE)
