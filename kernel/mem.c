@@ -616,7 +616,13 @@ setupkvm()
 int32_t
 sys_get_num_free_page(void)
 {
-	
+	num_free_pages = 0;
+	struct PageInfo *cur_node = page_free_list;
+	while(cur_node != NULL)
+	{
+		num_free_pages++;
+		cur_node = cur_node->pp_link;
+	}
   return num_free_pages;
 }
 
