@@ -21,7 +21,6 @@ void set_timer(int hz)
 void timer_handler(struct Trapframe *tf)
 {
   extern void sched_yield();
-  int i;
 
   jiffies++;
 
@@ -42,7 +41,8 @@ void timer_handler(struct Trapframe *tf)
    *
    */
     Task * handling_task;
-    for(int task_id = 0;task_id < NR_TASKS; task_id++)
+    int task_id;
+    for(task_id = 0;task_id < NR_TASKS; task_id++)
     {
       handling_task = &tasks[task_id];
       if (handling_task->state == TASK_SLEEP)
