@@ -616,6 +616,7 @@ setupkvm()
 int32_t
 sys_get_num_free_page(void)
 {
+	
   return num_free_pages;
 }
 
