@@ -41,6 +41,26 @@ void timer_handler(struct Trapframe *tf)
    * 4. sched_yield() if the time is up for current task
    *
    */
+    Task * handling_task;
+    for(int task_id = 0;task_id < NR_TASKS; task_id++)
+    {
+      handling_task = &tasks[task_id];
+      if (handling_task->state == TASK_SLEEP)
+      {
+        handling_task->remind_ticks--;
+        if (handling_task->remind_ticks <= 0)
+        {
+          handling_task->state = TASK_RUNNABLE;
+        }
+      }
+    }
+    handling_task = cur_task;
+    handling_task->remind_ticks--;
+    if (handling_task->remind_ticks <= 0)
+    {
+      handling_task->state = TASK_RUNNABLE;
+      sched_yield();
+    }
   }
 }
 

@@ -46,6 +46,7 @@ void              mem_init                (void);
 int32_t           sys_get_num_free_page   (void);
 int32_t           sys_get_num_used_page   (void);
 
+bool pteExist(pde_t *pte);
 
 /* -------------- Inline Functions --------------  */
 
