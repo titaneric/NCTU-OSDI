@@ -630,7 +630,7 @@ sys_get_num_free_page(void)
 int32_t
 sys_get_num_used_page(void)
 {
-  return npages - num_free_pages; 
+  return npages - sys_get_num_free_page(); 
 }
 
 // --------------------------------------------------------------
