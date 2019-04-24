@@ -36,7 +36,7 @@ void kernel_main(void)
   /* Enable interrupt */
   // __asm __volatile("sti");
 
-  lcr3(PADDR(cur_task->pgdir));
+  // lcr3(PADDR(cur_task->pgdir));
 
   /* Move to user mode */
   // asm volatile("movl %0,%%eax\n\t" \

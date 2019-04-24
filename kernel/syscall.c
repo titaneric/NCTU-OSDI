@@ -5,6 +5,15 @@
 #include <kernel/trap.h>
 #include <inc/stdio.h>
 
+extern int sys_fork();
+extern void sched_yield();
+extern void sys_kill();
+extern int32_t sys_get_num_used_page();
+extern int32_t sys_get_num_free_page();
+extern unsigned long sys_get_ticks();
+extern void sys_cls();
+extern void sys_settextcolor();
+
 void do_puts(char *str, uint32_t len)
 {
 	uint32_t i;
