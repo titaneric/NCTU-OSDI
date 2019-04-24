@@ -1,4 +1,6 @@
 #include <kernel/trap.h>
+#include <kernel/task.h>
+#include <kernel/mem.h>
 #include <inc/assert.h>
 #include <inc/mmu.h>
 #include <inc/x86.h>
@@ -9,14 +11,16 @@
  */
 static struct Trapframe *last_tf;
 
-/* TODO: You should declare an interrupt descriptor table.
- *       In x86, there are at most 256 it.
- *
- * Note: You can leverage the Gatedesc data structure inside mmu.h
- *       Interrupt descriptor table must be built at run time because shifted
- *       function addresses can't be represented in relocation records.
- */
 
+/* Interrupt descriptor table.  (Must be built at run time because
+ * shifted function addresses can't be represented in relocation records.)
+ */
+struct Gatedesc idt[256] = { { 0 } };
+struct Pseudodesc idt_pd = {
+	sizeof(idt) - 1, (uint32_t) idt
+};
+
+<<<<<<< HEAD
 #define IDT_SIZE 256
 
 extern void kbd_intr();
@@ -28,6 +32,11 @@ struct Pseudodesc desc = {
 	.pd_lim = (uint16_t)(sizeof(IDT) - 1),
 	.pd_base = (uint32_t)IDT};
 /* For debugging */
+=======
+/* Trap handlers */
+TrapHandler trap_hnd[256] = { 0 };
+
+>>>>>>> osdi/lab5
 static const char *trapname(int trapno)
 {
 	static const char *const excnames[] = {
@@ -61,24 +70,30 @@ static const char *trapname(int trapno)
 	return "(unknown trap)";
 }
 
+<<<<<<< HEAD
 /* For debugging */
 void print_trapframe(struct Trapframe *tf)
+=======
+void
+print_trapframe(struct Trapframe *tf)
+>>>>>>> osdi/lab5
 {
-	cprintf("TRAP frame at %p \n");
+	printk("TRAP frame at %p \n", tf);
 	print_regs(&tf->tf_regs);
-	cprintf("  es   0x----%04x\n", tf->tf_es);
-	cprintf("  ds   0x----%04x\n", tf->tf_ds);
-	cprintf("  trap 0x%08x %s\n", tf->tf_trapno, trapname(tf->tf_trapno));
+	printk("  es   0x----%04x\n", tf->tf_es);
+	printk("  ds   0x----%04x\n", tf->tf_ds);
+	printk("  trap 0x%08x %s\n", tf->tf_trapno, trapname(tf->tf_trapno));
 	// If this trap was a page fault that just happened
 	// (so %cr2 is meaningful), print the faulting linear address.
 	if (tf == last_tf && tf->tf_trapno == T_PGFLT)
-		cprintf("  cr2  0x%08x\n", rcr2());
-	cprintf("  err  0x%08x", tf->tf_err);
+		printk("  cr2  0x%08x\n", rcr2());
+	printk("  err  0x%08x", tf->tf_err);
 	// For page faults, print decoded fault error code:
 	// U/K=fault occurred in user/kernel mode
 	// W/R=a write/read caused the fault
 	// PR=a protection violation caused the fault (NP=page not present).
 	if (tf->tf_trapno == T_PGFLT)
+<<<<<<< HEAD
 		cprintf(" [%s, %s, %s]\n",
 				tf->tf_err & 4 ? "user" : "kernel",
 				tf->tf_err & 2 ? "write" : "read",
@@ -97,15 +112,62 @@ void print_trapframe(struct Trapframe *tf)
 
 /* For debugging */
 void print_regs(struct PushRegs *regs)
+=======
+		printk(" [%s, %s, %s]\n",
+			tf->tf_err & 4 ? "user" : "kernel",
+			tf->tf_err & 2 ? "write" : "read",
+			tf->tf_err & 1 ? "protection" : "not-present");
+	else
+		printk("\n");
+	printk("  eip  0x%08x\n", tf->tf_eip);
+	printk("  cs   0x----%04x\n", tf->tf_cs);
+	printk("  flag 0x%08x\n", tf->tf_eflags);
+	if ((tf->tf_cs & 3) != 0) {
+		printk("  esp  0x%08x\n", tf->tf_esp);
+		printk("  ss   0x----%04x\n", tf->tf_ss);
+	}
+}
+void
+print_regs(struct PushRegs *regs)
+>>>>>>> osdi/lab5
 {
-	cprintf("  edi  0x%08x\n", regs->reg_edi);
-	cprintf("  esi  0x%08x\n", regs->reg_esi);
-	cprintf("  ebp  0x%08x\n", regs->reg_ebp);
-	cprintf("  oesp 0x%08x\n", regs->reg_oesp);
-	cprintf("  ebx  0x%08x\n", regs->reg_ebx);
-	cprintf("  edx  0x%08x\n", regs->reg_edx);
-	cprintf("  ecx  0x%08x\n", regs->reg_ecx);
-	cprintf("  eax  0x%08x\n", regs->reg_eax);
+	printk("  edi  0x%08x\n", regs->reg_edi);
+	printk("  esi  0x%08x\n", regs->reg_esi);
+	printk("  ebp  0x%08x\n", regs->reg_ebp);
+	printk("  oesp 0x%08x\n", regs->reg_oesp);
+	printk("  ebx  0x%08x\n", regs->reg_ebx);
+	printk("  edx  0x%08x\n", regs->reg_edx);
+	printk("  ecx  0x%08x\n", regs->reg_ecx);
+	printk("  eax  0x%08x\n", regs->reg_eax);
+}
+
+void register_handler(int trapno, TrapHandler hnd, void (*trap_entry)(void), int isTrap, int dpl)
+{
+	if (trapno >= 0 && trapno < 256 && trap_entry != NULL)
+	{
+		trap_hnd[trapno] = hnd;
+		/* Set trap gate */
+		SETGATE(idt[trapno], isTrap, GD_KT, trap_entry, dpl);
+	}
+}
+
+//
+// Restores the register values in the Trapframe with the 'iret' instruction.
+// This exits the kernel and starts executing some environment's code.
+//
+// This function does not return.
+//
+void
+env_pop_tf(struct Trapframe *tf)
+{
+	__asm __volatile("movl %0,%%esp\n"
+		"\tpopal\n"
+		"\tpopl %%es\n"
+		"\tpopl %%ds\n"
+		"\taddl $0x8,%%esp\n" /* skip tf_trapno and tf_errcode */
+		"\tiret"
+		: : "g" (tf) : "memory");
+	panic("iret failed");  /* mostly to placate the compiler */
 }
 
 static void page_fault_handler()
@@ -119,6 +181,7 @@ static void page_fault_handler()
 static void
 trap_dispatch(struct Trapframe *tf)
 {
+<<<<<<< HEAD
 	/* TODO: Handle specific interrupts.
    *       You need to check the interrupt number in order to tell
    *       which interrupt is currently happening since every interrupt
@@ -149,11 +212,52 @@ trap_dispatch(struct Trapframe *tf)
 		// Unexpected trap: The user process or the kernel has a bug.
 		print_trapframe(tf);
 	}
+=======
+	// Handle spurious interrupts
+	// The hardware sometimes raises these because of noise on the
+	// IRQ line or other reasons. We don't care.
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_SPURIOUS) {
+		printk("Spurious interrupt on irq 7\n");
+		print_trapframe(tf);
+		return;
+	}
+
+	last_tf = tf;
+	/* Lab3: Check the trap number and call the interrupt handler. */
+	if (trap_hnd[tf->tf_trapno] != NULL)
+	{
+	
+		if ((tf->tf_cs & 3) == 3)
+		{
+			// Trapped from user mode.
+			extern Task *cur_task;
+
+			// Disable interrupt first
+			// Think: Why we disable interrupt here?
+			__asm __volatile("cli");
+
+			// Copy trap frame (which is currently on the stack)
+			// into 'cur_task->tf', so that running the environment
+			// will restart at the trap point.
+			cur_task->tf = *tf;
+			tf = &(cur_task->tf);
+				
+		}
+		// Do ISR
+		trap_hnd[tf->tf_trapno](tf);
+		
+		// Pop the kernel stack 
+		env_pop_tf(tf);
+		return;
+	}
+
+	// Unexpected trap: The user process or the kernel has a bug.
+	print_trapframe(tf);
+	panic("Unexpected trap!");
+	
+>>>>>>> osdi/lab5
 }
 
-/* 
- * Note: This is the called for every interrupt.
- */
 void default_trap_handler(struct Trapframe *tf)
 {
 	// Record that tf is the last real trapframe so
@@ -164,6 +268,7 @@ void default_trap_handler(struct Trapframe *tf)
 	trap_dispatch(tf);
 }
 
+<<<<<<< HEAD
 void trap_init()
 {
 	/* TODO: You should initialize the interrupt descriptor table.
@@ -202,4 +307,36 @@ void trap_init()
 
 	/* Load IDT */
 	lidt(&desc);
+=======
+
+void page_fault_handler(struct Trapframe *tf)
+{
+    printk("Page fault @ %p\n", rcr2());
+    while (1);
+}
+
+void trap_init()
+{
+	int i;
+	/* Initial interrupt descrip table for all traps */
+	extern void Default_ISR();
+	for (i = 0; i < 256; i++)
+	{
+		SETGATE(idt[i], 1, GD_KT, Default_ISR, 0);
+		trap_hnd[i] = NULL;
+	}
+
+
+  /* Using default_trap_handler */
+	extern void GPFLT();
+	SETGATE(idt[T_GPFLT], 1, GD_KT, GPFLT, 0);
+	extern void STACK_ISR();
+	SETGATE(idt[T_STACK], 1, GD_KT, STACK_ISR, 0);
+
+  /* Using custom trap handler */
+	extern void PGFLT();
+  register_handler(T_PGFLT, page_fault_handler, PGFLT, 1, 0);
+
+	lidt(&idt_pd);
+>>>>>>> osdi/lab5
 }

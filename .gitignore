@@ -1,1 +1,9 @@
+<<<<<<< HEAD
 /.vscode
+=======
+cscope.out
+tags
+*.o
+*.asm
+kernel/system
+>>>>>>> osdi/lab5
