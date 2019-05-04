@@ -302,7 +302,7 @@ page_init(void)
 			pages[i].pp_ref = 1;
 			pages[i].pp_link = NULL;
 		}
-		else if (i == EXTPHYSMEM / PGSIZE)
+		else if (i == MPENTRY_PADDR / PGSIZE)
 		{
 			pages[i].pp_ref = 1;
 			pages[i].pp_link = NULL;
