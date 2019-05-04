@@ -241,7 +241,6 @@ void sys_kill(int pid)
 //
 int sys_fork()
 {
-	extern bool pteExist();
   /* pid for newly created process */
   int pid = task_create();
 	if (pid == -1)
