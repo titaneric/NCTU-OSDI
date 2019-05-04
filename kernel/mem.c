@@ -251,6 +251,12 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	// TODO:
 	// Lab6: Your code here:
+    int kstktop_i = KSTACKTOP;
+    int cpu_i = 0;
+    for(;cpu_i < NCPU; cpu_i++, kstktop_i -= (KSTKSIZE + KSTKGAP))
+    {
+        boot_map_region(kern_pgdir, kstktop_i - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[cpu_i]), PTE_W | PTE_P);
+    }
 
 }
 
@@ -654,7 +660,7 @@ mmio_map_region(physaddr_t pa, size_t size)
     uintptr_t reserved_base = base; 
     boot_map_region(kern_pgdir, reserved_base, rounded_size, pa, PTE_PCD | PTE_PWT | PTE_W);
     base += rounded_size;
-    return reserved_base;
+    return (void *) reserved_base;
 }
 
 /* This is a simple wrapper function for mapping user program */
