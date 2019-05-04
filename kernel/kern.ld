@@ -46,9 +46,8 @@ PROVIDE(URODATA_end = .);
 }
 PROVIDE(rdata_end = .);
 
-stab_addr = (. - kernel_load_addr) + 0x100000;
 /* Include debugging information in kernel memory */
-.stab : AT(stab_addr) {
+.stab : {
   PROVIDE(__STAB_BEGIN__ = .);
   *(.stab);
   PROVIDE(__STAB_END__ = .);
