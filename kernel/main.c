@@ -78,8 +78,9 @@ boot_aps(void)
 	// 
 	// Your code here:
     // 1.
-    extern char mpentry_start[], npentry_end[];
-    memmove(KADDR(MPENTRY_PADDR), mpentry_start, mpentry_end - mpentry_start);
+    extern char mpentry_start[], mpentry_end[];
+    void *mpentry_addr = KADDR(MPENTRY_PADDR);
+    memmove(mpentry_addr, mpentry_start, mpentry_end - mpentry_start);
 
     // 2.
 
@@ -173,11 +174,20 @@ mp_main(void)
 	
 	// Your code here:
 	
+    // 3.
+    lapic_init();
+    // 4, 5, 6
+    task_init_percpu();
+    // 6
+    extern struct Pseudodesc idt_pd;
+    lidt(&idt_pd);
 
 	// TODO: Lab6
 	// Now that we have finished some basic setup, it's time to tell
 	// boot_aps() we're up ( using xchg )
 	// Your code here:
+    //
+    xchg(&thiscpu->cpu_status, CPU_STARTED); 
 
 
 

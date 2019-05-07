@@ -686,24 +686,27 @@ setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
 pde_t *
 setupkvm()
 {
+    extern uint32_t *lapic;
+    extern physaddr_t lapicaddr;
+
 		struct PageInfo *kernel_page = page_alloc(ALLOC_ZERO);
 	pde_t *pgdir = NULL;
 	if (kernel_page != NULL)
 	{
 		pgdir = page2kva(kernel_page);
-        int i = 0;
-        for(;i < 1024;i++)
+        
+		boot_map_region(pgdir, UPAGES, ROUNDUP((sizeof(struct PageInfo) * npages), PGSIZE), PADDR(pages), (PTE_U | PTE_P));
+		boot_map_region(pgdir, KERNBASE, (1<<32)-KERNBASE, 0, PTE_W);
+		boot_map_region(pgdir, IOPHYSMEM, ROUNDUP((EXTPHYSMEM - IOPHYSMEM), PGSIZE), IOPHYSMEM, (PTE_W) | (PTE_P));
+        boot_map_region(pgdir, lapic, PGSIZE, lapicaddr, PTE_PCD | PTE_PWT | PTE_W);
+
+
+        int kstktop_i = KSTACKTOP;
+        int cpu_i = 0;
+        for(;cpu_i < NCPU; cpu_i++, kstktop_i -= (KSTKSIZE + KSTKGAP))
         {
-            pgdir[i] = kern_pgdir[i];
-            if (pteExist(pgdir + i))
-            {
-                pa2page(PTE_ADDR(pgdir[i]))->pp_ref++;
-            }
+            boot_map_region(pgdir, kstktop_i - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[cpu_i]), PTE_W | PTE_P);
         }
-		//boot_map_region(pgdir, UPAGES, ROUNDUP((sizeof(struct PageInfo) * npages), PGSIZE), PADDR(pages), (PTE_U | PTE_P));
-		//boot_map_region(pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
-		//boot_map_region(pgdir, KERNBASE, (1<<32)-KERNBASE, 0, PTE_W);
-		//boot_map_region(pgdir, IOPHYSMEM, ROUNDUP((EXTPHYSMEM - IOPHYSMEM), PGSIZE), IOPHYSMEM, (PTE_W) | (PTE_P));
 	}
 	return pgdir;
 }

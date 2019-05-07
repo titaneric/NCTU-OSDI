@@ -41,7 +41,9 @@ typedef struct
 //
 typedef struct
 {
-
+    int ntask;      // number of aviable task
+    int cur_task;   // current task_id
+    int task_queue[NR_TASKS];
 } Runqueue;
 
 
