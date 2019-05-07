@@ -77,6 +77,28 @@ boot_aps(void)
 	//      -- Wait for the CPU to finish some basic setup in mp_main(
 	// 
 	// Your code here:
+    // 1.
+    extern char mpentry_start[], npentry_end[];
+    memmove(KADDR(MPENTRY_PADDR), mpentry_start, mpentry_end - mpentry_start);
+
+    // 2.
+
+    int i = 0;
+    struct CpuInfo *cpu = NULL;
+    for(;i<ncpu;i++)
+    {
+        cpu = cpus + i;
+
+        if (cpu->cpu_id == thiscpu->cpu_id)
+            continue;
+        // 2.1
+        mpentry_kstack = percpu_kstacks[i] + KSTKSIZE;
+        // 2.2
+        lapic_startap(cpu->cpu_id, MPENTRY_PADDR);
+        // 2.3
+        while (cpu->cpu_status != CPU_STARTED);
+    }
+
 }
 
 // Setup code for APs
