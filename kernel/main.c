@@ -40,7 +40,7 @@ void kernel_main(void)
   /* Enable interrupt */
   __asm __volatile("sti");
 
-  lcr3(PADDR(cur_task->pgdir));
+  lcr3(PADDR(thiscpu->cpu_task->pgdir));
 
   /* Move to user mode */
   asm volatile("movl %0,%%eax\n\t" \
@@ -50,7 +50,7 @@ void kernel_main(void)
   "pushl %2\n\t" \
   "pushl %3\n\t" \
   "iret\n" \
-  :: "m" (cur_task->tf.tf_esp), "i" (GD_UD | 0x03), "i" (GD_UT | 0x03), "m" (cur_task->tf.tf_eip)
+  :: "m" (thiscpu->cpu_task->tf.tf_esp), "i" (GD_UD | 0x03), "i" (GD_UT | 0x03), "m" (thiscpu->cpu_task->tf.tf_eip)
   :"ax");
 }
 
@@ -79,8 +79,7 @@ boot_aps(void)
 	// Your code here:
     // 1.
     extern char mpentry_start[], mpentry_end[];
-    void *mpentry_addr = KADDR(MPENTRY_PADDR);
-    memmove(mpentry_addr, mpentry_start, mpentry_end - mpentry_start);
+    memmove(KADDR(MPENTRY_PADDR), mpentry_start, mpentry_end - mpentry_start);
 
     // 2.
 

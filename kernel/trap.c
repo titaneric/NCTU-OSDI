@@ -1,6 +1,7 @@
 #include <kernel/trap.h>
 #include <kernel/task.h>
 #include <kernel/mem.h>
+#include <kernel/cpu.h>
 #include <inc/assert.h>
 #include <inc/mmu.h>
 #include <inc/x86.h>
@@ -159,8 +160,8 @@ trap_dispatch(struct Trapframe *tf)
 			// Copy trap frame (which is currently on the stack)
 			// into 'cur_task->tf', so that running the environment
 			// will restart at the trap point.
-			cur_task->tf = *tf;
-			tf = &(cur_task->tf);
+			thiscpu->cpu_task->tf = *tf;
+			tf = &(thiscpu->cpu_task->tf);
 				
 		}
 		// Do ISR
