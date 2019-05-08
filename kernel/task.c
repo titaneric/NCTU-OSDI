@@ -206,7 +206,7 @@ void sys_kill(int pid)
         {
             if (thiscpu->cpu_rq.task_queue[i] == pid)
             {
-                memmove(&thiscpu->cpu_rq.task_queue[i], &thiscpu->cpu_rq.task_queue[i+1], (thiscpu->cpu_rq.ntask - i));
+                memmove(&thiscpu->cpu_rq.task_queue[i], &thiscpu->cpu_rq.task_queue[i+1], (thiscpu->cpu_rq.ntask - i - 1) * sizeof(int));
                 thiscpu->cpu_rq.ntask--;
                 break;
             }
@@ -292,7 +292,6 @@ int sys_fork()
     setupvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);
 
 		// step 5
-		thiscpu->cpu_task->tf.tf_regs.reg_eax = pid;
 		tasks[pid].tf.tf_regs.reg_eax = 0;
 	}
 
@@ -309,7 +308,7 @@ int sys_fork()
         }
     }
 
-    min_cpu->cpu_rq.task_queue[min_ntask] = pid;
+    min_cpu->cpu_rq.task_queue[min_cpu->cpu_rq.ntask] = pid;
     min_cpu->cpu_rq.ntask++;
 	return pid;
 }
