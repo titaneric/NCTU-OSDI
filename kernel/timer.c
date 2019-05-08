@@ -32,9 +32,8 @@ void timer_handler(struct Trapframe *tf)
 
   extern Task tasks[];
 
-  extern Task *cur_task;
 
-  if (cur_task != NULL)
+  if (thiscpu->cpu_task != NULL)
   {
   /* TODO: Lab 5
    * 1. Maintain the status of slept tasks
@@ -48,9 +47,9 @@ void timer_handler(struct Trapframe *tf)
    */
     Task * handling_task;
     int task_id;
-    for(task_id = 0;task_id < NR_TASKS; task_id++)
+    for(task_id = 0;task_id < thiscpu->cpu_rq.ntask; task_id++)
     {
-      handling_task = &tasks[task_id];
+      handling_task = &thiscpu->cpu_rq.task_queue[task_id];
       if (handling_task->state == TASK_SLEEP)
       {
         handling_task->remind_ticks--;
@@ -60,7 +59,7 @@ void timer_handler(struct Trapframe *tf)
         }
       }
     }
-    handling_task = cur_task;
+    handling_task = thiscpu->cpu_task;
     handling_task->remind_ticks--;
     if (handling_task->remind_ticks <= 0)
     {

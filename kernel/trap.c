@@ -151,7 +151,6 @@ trap_dispatch(struct Trapframe *tf)
 		if ((tf->tf_cs & 3) == 3)
 		{
 			// Trapped from user mode.
-			extern Task *cur_task;
 
 			// Disable interrupt first
 			// Think: Why we disable interrupt here?

@@ -43,14 +43,12 @@
 void sched_yield(void)
 {
 	extern Task tasks[];
-	extern Task *cur_task;
 	
-	int cur_task_id = cur_task->task_id;
-	int picked_task_id = cur_task_id;
+	int picked_task_id = thiscpu->cpu_rq.cur_task;
 	int task_it;
-	for(task_it = 1; task_it < NR_TASKS ; task_it++)
+	for(task_it = 1; task_it < thiscpu->cpu_rq.ntask ; task_it++)
 	{
-		int task_id = (cur_task_id + task_it) % NR_TASKS;
+		int task_id = (thiscpu->cpu_rq.cur_task + task_it) % NR_TASKS;
 		if (tasks[task_id].state == TASK_RUNNABLE)
 		{
 			picked_task_id = task_id;
@@ -58,12 +56,13 @@ void sched_yield(void)
 		}
 	}
 
-	cur_task = &tasks[picked_task_id];
-	cur_task->remind_ticks = TIME_QUANT;
-	cur_task->state = TASK_RUNNING;
+	thiscpu->cpu_task = &tasks[picked_task_id];
+	thiscpu->cpu_task->remind_ticks = TIME_QUANT;
+	thiscpu->cpu_task->state = TASK_RUNNING;
+    thiscpu->cpu_rq.cur_task = picked_task_id;
 
 	// load page directory
-	lcr3(PADDR(cur_task->pgdir));
+	lcr3(PADDR(thiscpu->cpu_task->pgdir));
 	// context switch
-	ctx_switch(cur_task);
+	ctx_switch(thiscpu->cpu_task);
 }

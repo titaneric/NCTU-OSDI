@@ -69,7 +69,6 @@ uint32_t UDATA_SZ;
 uint32_t UBSS_SZ;
 uint32_t URODATA_SZ;
 
-Task *cur_task = NULL; //Current running task
 
 extern void sched_yield(void);
 
@@ -148,7 +147,7 @@ int task_create()
 	ts->remind_ticks = TIME_QUANT;
 	ts->state = TASK_RUNNABLE;
 	ts->task_id = pid;
-	ts->parent_id = (cur_task != NULL) ? cur_task->task_id : 0;
+	ts->parent_id = (thiscpu->cpu_task != NULL) ? thiscpu->cpu_task->task_id : 0;
 
 	return ts->task_id;
 }
@@ -195,16 +194,32 @@ static void task_free(int pid)
 //
 void sys_kill(int pid)
 {
-	if (pid > 0 && pid < NR_TASKS)
+	if (pid > 0 && pid < NR_TASKS && thiscpu->cpu_rq.ntask)
 	{
 	/* TODO: Lab 5
    * Remember to change the state of tasks
    * Free the memory
    * and invoke the scheduler for yield
    */
+        int i;
+        for(i = 0; i < thiscpu->cpu_rq.ntask ;i++)
+        {
+            if (thiscpu->cpu_rq.task_queue[i] == pid)
+            {
+                memmove(&thiscpu->cpu_rq.task_queue[i], &thiscpu->cpu_rq.task_queue[i+1], (thiscpu->cpu_rq.ntask - i));
+                thiscpu->cpu_rq.ntask--;
+                break;
+            }
+        }
+
 		tasks[pid].state = TASK_FREE;
 		task_free(pid);
-		sched_yield();
+
+        if (thiscpu->cpu_task->task_id == pid)
+        {
+		    thiscpu->cpu_task = NULL;
+            sched_yield();
+        }
 	}
 }
 
@@ -245,16 +260,16 @@ int sys_fork()
   int pid = task_create();
 	if (pid == -1)
 		return -1;
-	if ((uint32_t)cur_task)
+	if ((uint32_t)thiscpu->cpu_task)
 	{
 		// step 1
-		tasks[pid].tf = cur_task->tf;
+		tasks[pid].tf = thiscpu->cpu_task->tf;
 
 		// step 2
 		int va;
 		for_each_user_stack_page_va(va)
 		{
-			pte_t *source_pte = pgdir_walk(cur_task->pgdir, va - PGSIZE, 0);
+			pte_t *source_pte = pgdir_walk(thiscpu->cpu_task->pgdir, va - PGSIZE, 0);
 			pte_t *dest_pte = pgdir_walk(tasks[pid].pgdir, va - PGSIZE, 0);
 
 			if (source_pte == NULL)
@@ -277,9 +292,25 @@ int sys_fork()
     setupvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);
 
 		// step 5
-		cur_task->tf.tf_regs.reg_eax = pid;
+		thiscpu->cpu_task->tf.tf_regs.reg_eax = pid;
 		tasks[pid].tf.tf_regs.reg_eax = 0;
 	}
+
+    int min_ntask = NR_TASKS * NCPU + 1;
+    struct CpuInfo *min_cpu = cpus;
+    int cpu_i;
+    for(cpu_i = 0;cpu_i < ncpu;cpu_i++)
+    {
+        int ntask = cpus[cpu_i].cpu_rq.ntask; 
+        if (ntask < min_ntask)
+        {
+            min_ntask = ntask;
+            min_cpu = cpus + cpu_i;
+        }
+    }
+
+    min_cpu->cpu_rq.task_queue[min_ntask] = pid;
+    min_cpu->cpu_rq.ntask++;
 	return pid;
 }
 
@@ -338,8 +369,8 @@ void task_init_percpu()
 	thiscpu->cpu_tss.ts_gs = GD_UD | 0x03;
 
 	/* Setup thiscpu->cpu_tss in GDT */
-	gdt[GD_TSS0 >> 3 + thiscpu->cpu_id] = SEG16(STS_T32A, (uint32_t)(&thiscpu->cpu_tss), sizeof(struct tss_struct), 0);
-	gdt[GD_TSS0 >> 3 + thiscpu->cpu_id].sd_s = 0;
+	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id] = SEG16(STS_T32A, (uint32_t)(&thiscpu->cpu_tss), sizeof(struct tss_struct), 0);
+	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id].sd_s = 0;
 
 	/* Setup first task */
 	i = task_create();

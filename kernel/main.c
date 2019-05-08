@@ -12,7 +12,6 @@
 
 extern void init_video(void);
 static void boot_aps(void);
-extern Task *cur_task;
 
 void kernel_main(void)
 {
@@ -83,13 +82,13 @@ boot_aps(void)
 
     // 2.
 
-    int i = 0;
+    int i;
     struct CpuInfo *cpu = NULL;
-    for(;i<ncpu;i++)
+    for(i = 0;i < ncpu; i++)
     {
         cpu = cpus + i;
 
-        if (cpu->cpu_id == thiscpu->cpu_id)
+        if (i == cpunum())
             continue;
         // 2.1
         mpentry_kstack = percpu_kstacks[i] + KSTKSIZE;
@@ -170,7 +169,7 @@ mp_main(void)
 	// We are in high EIP now, safe to switch to kern_pgdir 
 	lcr3(PADDR(kern_pgdir));
 	printk("SMP: CPU %d starting\n", cpunum());
-	
+
 	// Your code here:
 	
     // 3.
@@ -186,13 +185,14 @@ mp_main(void)
 	// boot_aps() we're up ( using xchg )
 	// Your code here:
     //
-    xchg(&thiscpu->cpu_status, CPU_STARTED); 
+    xchg(&(thiscpu->cpu_status), CPU_STARTED); 
 
 
 
 	/* Enable interrupt */
 	__asm __volatile("sti");
 
+    while(1);    
 	lcr3(PADDR(thiscpu->cpu_task->pgdir));
 
 	/* Move to user mode */
