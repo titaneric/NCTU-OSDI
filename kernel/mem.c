@@ -9,6 +9,7 @@
 #include <kernel/mem.h>
 #include <kernel/kclock.h>
 #include <kernel/cpu.h>
+#include <kernel/spinlock.h>
 
 // These variables are set by i386_detect_memory()
 size_t                   npages;			// Amount of physical memory (in pages)
@@ -21,6 +22,7 @@ struct PageInfo          *pages;		// Physical page state array
 static struct PageInfo   *page_free_list;	// Free list of physical pages
 size_t                   num_free_pages;
 
+struct spinlock page_lock;
 // --------------------------------------------------------------
 // Detect machine's physical memory setup.
 // --------------------------------------------------------------
@@ -121,6 +123,7 @@ boot_alloc(uint32_t n)
 void
 mem_init(void)
 {
+        spin_initlock(&page_lock);
 	uint32_t cr0;
     nextfree = 0;
     page_free_list = 0;
@@ -187,7 +190,7 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
-boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
+// boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
 	// Ie.  the VA range [KERNBASE, 2^32) should map to
@@ -300,6 +303,7 @@ page_init(void)
 	 * copy and run AP bootstrap code at that physical address
 	 *
 	 */
+	/*
 	page_free_list = NULL;
     size_t i;
 	for (i = 0; i < npages; i++) {
@@ -335,7 +339,21 @@ page_init(void)
 			pages[i].pp_link = page_free_list;
 			page_free_list = &pages[i];
 		}
-    }
+    }*/
+
+   pages[0].pp_ref = 1;
+    size_t i;
+	for ( i = 1; i < npages; ++i ) {
+		if ( (i >= PGNUM(IOPHYSMEM) && i < PGNUM(EXTPHYSMEM)) ||
+			 (i >= PGNUM(EXTPHYSMEM) && i < PGNUM(PADDR(nextfree))) ||
+             i == PGNUM(MPENTRY_PADDR) ) {
+			pages[i].pp_ref = 1;
+		} else {
+			pages[i].pp_link = page_free_list;
+			page_free_list = &pages[i];
+            ++num_free_pages;
+		}
+	};    
 }
 
 //
@@ -356,6 +374,7 @@ page_alloc(int alloc_flags)
     if (page_free_list == NULL)
 		return NULL;
 
+    spin_lock(&page_lock);
 	// point to free page
 	struct PageInfo *alloc_page = page_free_list;
 
@@ -368,6 +387,7 @@ page_alloc(int alloc_flags)
 		memset(addr, '\0', PGSIZE);
 	}
 	alloc_page->pp_link = NULL;
+        spin_unlock(&page_lock);
 	return alloc_page;
 }
 
@@ -381,6 +401,7 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
+	spin_lock(&page_lock);
 	if (pp->pp_ref != 0)
 	{
 		panic("ref count is not zero!");
@@ -398,6 +419,7 @@ page_free(struct PageInfo *pp)
 			page_free_list = pp;
 		}
 	}
+        spin_unlock(&page_lock);
 }
 
 //
@@ -658,11 +680,12 @@ mmio_map_region(physaddr_t pa, size_t size)
 	//
 	// Lab6 TODO
 	// Your code here:
-	int rounded_size = ROUNDUP(size, PGSIZE);
-    uintptr_t reserved_base = base; 
-    boot_map_region(kern_pgdir, reserved_base, rounded_size, pa, PTE_PCD | PTE_PWT | PTE_W);
-    base += rounded_size;
-    return (void *) reserved_base;
+	
+    boot_map_region(kern_pgdir, base, ROUNDUP(size, PGSIZE), pa, PTE_PCD | PTE_PWT | PTE_W);
+    void* reserved_base = (void*)base;
+    base += ROUNDUP(size, PGSIZE);
+
+    return reserved_base;
 }
 
 /* This is a simple wrapper function for mapping user program */

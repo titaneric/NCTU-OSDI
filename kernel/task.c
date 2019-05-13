@@ -6,6 +6,7 @@
 #include <kernel/task.h>
 #include <kernel/mem.h>
 #include <kernel/cpu.h>
+#include <kernel/spinlock.h>
 
 #define for_each_user_stack_page_va(va) \
 				for(va = USTACKTOP;va > USTACKTOP - USR_STACK_SIZE; va -= PGSIZE)
@@ -54,7 +55,6 @@ struct Pseudodesc gdt_pd = {
 
 
 
-static struct tss_struct tss;
 Task tasks[NR_TASKS];
 
 extern char bootstack[];
@@ -69,6 +69,7 @@ uint32_t UDATA_SZ;
 uint32_t UBSS_SZ;
 uint32_t URODATA_SZ;
 
+struct spinlock task_lock;
 
 extern void sched_yield(void);
 
@@ -100,6 +101,7 @@ extern void sched_yield(void);
  */
 int task_create()
 {
+    spin_lock(&task_lock);
 	Task *ts = NULL;
 
 	/* Find a free task structure */
@@ -116,8 +118,10 @@ int task_create()
 		}
 	}
 
-	if (!found)
+	if (!found){
+                spin_unlock(&task_lock);
 		return -1;
+        }
 
   /* Setup Page Directory and pages for kernel*/
   if (!(ts->pgdir = setupkvm()))
@@ -148,7 +152,7 @@ int task_create()
 	ts->state = TASK_RUNNABLE;
 	ts->task_id = pid;
 	ts->parent_id = (thiscpu->cpu_task != NULL) ? thiscpu->cpu_task->task_id : 0;
-
+	spin_unlock(&task_lock);
 	return ts->task_id;
 }
 
@@ -388,7 +392,7 @@ void task_init_percpu()
 	    thiscpu->cpu_task->tf.tf_eip = (uint32_t)idle_entry;
 
     // 2.
-    memset(&thiscpu->cpu_rq.task_queue, 0, sizeof(thiscpu->cpu_rq.task_queue));
+    //memset(&thiscpu->cpu_rq.task_queue, 0, sizeof(thiscpu->cpu_rq.task_queue));
     thiscpu->cpu_rq.cur_task = 0;
     thiscpu->cpu_rq.task_queue[0] = i;
     thiscpu->cpu_rq.ntask = 1;

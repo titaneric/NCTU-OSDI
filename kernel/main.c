@@ -192,7 +192,6 @@ mp_main(void)
 	/* Enable interrupt */
 	__asm __volatile("sti");
 
-    while(1);    
 	lcr3(PADDR(thiscpu->cpu_task->pgdir));
 
 	/* Move to user mode */
