@@ -324,13 +324,14 @@ int sys_fork()
 void task_init()
 {
   extern int user_entry();
-	int i;
+ spin_initlock(&task_lock);
   UTEXT_SZ = (uint32_t)(UTEXT_end - UTEXT_start);
   UDATA_SZ = (uint32_t)(UDATA_end - UDATA_start);
   UBSS_SZ = (uint32_t)(UBSS_end - UBSS_start);
   URODATA_SZ = (uint32_t)(URODATA_end - URODATA_start);
 
 	/* Initial task sturcture */
+        int i;
 	for (i = 0; i < NR_TASKS; i++)
 	{
 		memset(&(tasks[i]), 0, sizeof(Task));
@@ -387,9 +388,9 @@ void task_init_percpu()
 
     // 1.
     if (thiscpu->cpu_id == bootcpu->cpu_id )
-	    thiscpu->cpu_task->tf.tf_eip = (uint32_t)user_entry;
+	    thiscpu->cpu_task->tf.tf_eip = user_entry;
     else
-	    thiscpu->cpu_task->tf.tf_eip = (uint32_t)idle_entry;
+	    thiscpu->cpu_task->tf.tf_eip = idle_entry;
 
     // 2.
     //memset(&thiscpu->cpu_rq.task_queue, 0, sizeof(thiscpu->cpu_rq.task_queue));

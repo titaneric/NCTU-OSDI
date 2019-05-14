@@ -725,11 +725,12 @@ setupkvm()
 		boot_map_region(pgdir, IOPHYSMEM, ROUNDUP((EXTPHYSMEM - IOPHYSMEM), PGSIZE), IOPHYSMEM, (PTE_W) | (PTE_P));
         boot_map_region(pgdir, lapic, PGSIZE, lapicaddr, PTE_PCD | PTE_PWT | PTE_W);
 
-
+	
         int kstktop_i = KSTACKTOP;
         int cpu_i = 0;
         for(;cpu_i < NCPU; cpu_i++, kstktop_i -= (KSTKSIZE + KSTKGAP))
         {
+            printk("%x, %x\n", kstktop_i - KSTKSIZE, PADDR(percpu_kstacks[cpu_i]));
             boot_map_region(pgdir, kstktop_i - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[cpu_i]), PTE_W | PTE_P);
         }
 	}

@@ -185,7 +185,7 @@ mp_main(void)
 	// boot_aps() we're up ( using xchg )
 	// Your code here:
     //
-    xchg(&(thiscpu->cpu_status), CPU_STARTED); 
+    xchg(&thiscpu->cpu_status, CPU_STARTED); 
 
 
 
