@@ -52,8 +52,8 @@ gdt:
 SEG_NULL    # NULL segment
 
 SEG(STA_X|STA_R, 0x0, 0xffffffff)	# Kernel code segment
-SEG(STA_W, 0x0, 0xffffffff) 		# Kernel data segment
+SEG(STA_W|STA_R, 0x0, 0xffffffff) 		# Kernel data segment
 
 gdtdesc: 
-.word	0x17		# sizeof(gdt) - 1
+.word	gdtdesc - gdt - 1		# sizeof(gdt) - 1
 .word	gdt,0	# gdt base = 07xxx
