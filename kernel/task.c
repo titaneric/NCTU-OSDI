@@ -8,6 +8,9 @@
 #include <kernel/cpu.h>
 #include <kernel/spinlock.h>
 
+#define for_each_user_stack_page_va(va) \
+				for(va = USTACKTOP;va > USTACKTOP - USR_STACK_SIZE; va -= PGSIZE)
+
 // Global descriptor table.
 //
 // Set up global descriptor table (GDT) with separate segments for
@@ -71,7 +74,7 @@ struct spinlock task_lock;
 extern void sched_yield(void);
 
 
-/* 
+/* TODO: Lab5
  * 1. Find a free task structure for the new task,
  *    the global task list is in the array "tasks".
  *    You should find task that is in the state "TASK_FREE"
@@ -99,36 +102,42 @@ extern void sched_yield(void);
 int task_create()
 {
     spin_lock(&task_lock);
-
 	Task *ts = NULL;
 
 	/* Find a free task structure */
-    int pid;
-    for ( pid = 0; pid < NR_TASKS; ++pid )
-        if ( tasks[pid].state == TASK_FREE ) {
-            ts = &tasks[pid];
-            break;
-        }
 
-    if ( !ts ) {
-        spin_unlock(&task_lock);
-        return -1;
-    }
+	bool found = false;
+	int pid = 0;
+	for(;pid<NR_TASKS;pid++)
+	{
+		if (tasks[pid].state == TASK_FREE)
+		{
+			ts = &tasks[pid];
+			found = true;
+			break;
+		}
+	}
+
+	if (!found){
+                spin_unlock(&task_lock);
+		return -1;
+        }
 
   /* Setup Page Directory and pages for kernel*/
   if (!(ts->pgdir = setupkvm()))
     panic("Not enough memory for per process page directory!\n");
 
   /* Setup User Stack */
-    int va;
-    for ( va = USTACKTOP - USR_STACK_SIZE; va < USTACKTOP; va += PGSIZE ) {
-        struct PageInfo* pp = page_alloc(ALLOC_ZERO);
-        if ( !pp )
-            return -1;
-        if ( page_insert(ts->pgdir, pp, (void*)va, PTE_W | PTE_U) )
-            return -1;
-    }
-
+	int va;
+	for_each_user_stack_page_va(va)
+	{
+		struct PageInfo *pp = page_alloc(ALLOC_ZERO);
+		if (pp == NULL)
+			return -1;
+		int status = page_insert(ts->pgdir, pp, va - PGSIZE, PTE_W | PTE_U);
+		if (status < 0)
+			return -1;
+	}
 	/* Setup Trapframe */
 	memset( &(ts->tf), 0, sizeof(ts->tf));
 
@@ -139,16 +148,16 @@ int task_create()
 	ts->tf.tf_esp = USTACKTOP-PGSIZE;
 
 	/* Setup task structure (task_id and parent_id) */
-    ts->task_id = pid;
-    ts->parent_id = thiscpu->cpu_task ? thiscpu->cpu_task->task_id:0;
-    ts->remind_ticks = TIME_QUANT;
-    ts->state = TASK_RUNNABLE;
-    spin_unlock(&task_lock);
-    return pid;
+	ts->remind_ticks = TIME_QUANT;
+	ts->state = TASK_RUNNABLE;
+	ts->task_id = pid;
+	ts->parent_id = (thiscpu->cpu_task != NULL) ? thiscpu->cpu_task->task_id : 0;
+	spin_unlock(&task_lock);
+	return ts->task_id;
 }
 
 
-/*
+/* TODO: Lab5
  * This function free the memory allocated by kernel.
  *
  * 1. Be sure to change the page directory to kernel's page
@@ -169,17 +178,19 @@ int task_create()
 
 static void task_free(int pid)
 {
-    lcr3(PADDR(kern_pgdir));
-    // remove user stack
-    int va;
-    for ( va = USTACKTOP - USR_STACK_SIZE; va < USTACKTOP; va += PGSIZE )
-        page_remove(tasks[pid].pgdir, (void*)va);
-
-    ptable_remove(tasks[pid].pgdir);
-    pgdir_remove(tasks[pid].pgdir);
+	pde_t *pgdir = tasks[pid].pgdir;
+	// change to kernel page directory
+	lcr3(PADDR(kern_pgdir));
+	int va;
+	for_each_user_stack_page_va(va)
+	{
+		page_remove(pgdir, va - PGSIZE);
+	}
+	ptable_remove(pgdir);
+	pgdir_remove(pgdir);
 }
 
-// Lab6
+// Lab6 TODO
 //
 // Modify it so that the task will be removed form cpu runqueue
 // ( we not implement signal yet so do not try to kill process
@@ -187,25 +198,36 @@ static void task_free(int pid)
 //
 void sys_kill(int pid)
 {
-    if ( pid > 0 && pid < NR_TASKS && thiscpu->cpu_rq.ntask ) {
+	if (pid > 0 && pid < NR_TASKS && thiscpu->cpu_rq.ntask)
+	{
+	/* TODO: Lab 5
+   * Remember to change the state of tasks
+   * Free the memory
+   * and invoke the scheduler for yield
+   */
         int i;
-        for ( i = 0 ; i < thiscpu->cpu_rq.ntask; i++ ) {
-            if ( thiscpu->cpu_rq.task_queue[i] == pid ) {
+        for(i = 0; i < thiscpu->cpu_rq.ntask ;i++)
+        {
+            if (thiscpu->cpu_rq.task_queue[i] == pid)
+            {
                 memmove(&thiscpu->cpu_rq.task_queue[i], &thiscpu->cpu_rq.task_queue[i+1], (thiscpu->cpu_rq.ntask - i - 1) * sizeof(int));
-                --thiscpu->cpu_rq.ntask;
+                thiscpu->cpu_rq.ntask--;
                 break;
             }
         }
-        tasks[pid].state = TASK_FREE;
-        task_free(pid);
-        if ( thiscpu->cpu_task->task_id == pid ) {
-            thiscpu->cpu_task = NULL;
+
+		tasks[pid].state = TASK_FREE;
+		task_free(pid);
+
+        if (thiscpu->cpu_task->task_id == pid)
+        {
+		    thiscpu->cpu_task = NULL;
             sched_yield();
         }
-    }
+	}
 }
 
-/* 
+/* TODO: Lab 5
  * In this function, you have several things todo
  *
  * 1. Use task_create() to create an empty task, return -1
@@ -231,72 +253,85 @@ void sys_kill(int pid)
  */
 
 //
-// Lab6
+// Lab6 TODO:
 //
 // Modify it so that the task will disptach to different cpu runqueue
 // (please try to load balance, don't put all task into one cpu)
 //
 int sys_fork()
 {
-    /* pid for newly created process */
-    int pid = task_create();
-    if ( pid == -1 )
-        return -1;
+  /* pid for newly created process */
+  int pid = task_create();
+	if (pid == -1)
+		return -1;
+	if ((uint32_t)thiscpu->cpu_task)
+	{
+		// step 1
+		tasks[pid].tf = thiscpu->cpu_task->tf;
 
-    if ((uint32_t)thiscpu->cpu_task)
-    {
-        Task* child = &tasks[pid];
-        child->tf = thiscpu->cpu_task->tf;
-
-        // Copy stack
+		// step 2
 		int va;
-		for ( va = USTACKTOP - USR_STACK_SIZE; va < USTACKTOP; va += PGSIZE ) {
-            pte_t* pte_src = pgdir_walk(thiscpu->cpu_task->pgdir, (void*)va, 0);
-            pte_t* pte_dst = pgdir_walk(child->pgdir, (void*)va, 0);
-            memcpy(KADDR(PTE_ADDR(*pte_dst)), KADDR(PTE_ADDR(*pte_src)), PGSIZE);
+		for_each_user_stack_page_va(va)
+		{
+			pte_t *source_pte = pgdir_walk(thiscpu->cpu_task->pgdir, va - PGSIZE, 0);
+			pte_t *dest_pte = pgdir_walk(tasks[pid].pgdir, va - PGSIZE, 0);
+
+			if (source_pte == NULL)
+				panic("Source PTE not found");
+			if (dest_pte == NULL)
+				panic("Dest PTE not found");
+
+			if (!pteExist(source_pte))
+				panic("Source PTE not present");
+
+			if (!pteExist(dest_pte))
+				panic("Dest PTE not present");
+
+			memcpy(KADDR(PTE_ADDR(*dest_pte)), KADDR(PTE_ADDR(*source_pte)), PGSIZE);
 		}
+    /* Step 4: All user program use the same code for now */
+    setupvm(tasks[pid].pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
+    setupvm(tasks[pid].pgdir, (uint32_t)UDATA_start, UDATA_SZ);
+    setupvm(tasks[pid].pgdir, (uint32_t)UBSS_start, UBSS_SZ);
+    setupvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);
 
-        /* Step 4: All user program use the same code for now */
-        setupvm(tasks[pid].pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
-        setupvm(tasks[pid].pgdir, (uint32_t)UDATA_start, UDATA_SZ);
-        setupvm(tasks[pid].pgdir, (uint32_t)UBSS_start, UBSS_SZ);
-        setupvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);
+		// step 5
+		tasks[pid].tf.tf_regs.reg_eax = 0;
+	}
 
-        child->tf.tf_regs.reg_eax = 0;
-    }
-
-    // Find cpu with least tasks
-    int min = NR_TASKS * NCPU + 1;
-    int cid = 0;
-    int i;
-    for ( i = 0; i < ncpu; ++i ) {
-        if ( cpus[i].cpu_rq.ntask < min ) {
-            min = cpus[i].cpu_rq.ntask;
-            cid = i;
+    int min_ntask = NR_TASKS * NCPU + 1;
+    struct CpuInfo *min_cpu = cpus;
+    int cpu_i;
+    for(cpu_i = 0;cpu_i < ncpu;cpu_i++)
+    {
+        int ntask = cpus[cpu_i].cpu_rq.ntask; 
+        if (ntask < min_ntask)
+        {
+            min_ntask = ntask;
+            min_cpu = cpus + cpu_i;
         }
     }
 
-    cpus[cid].cpu_rq.task_queue[cpus[cid].cpu_rq.ntask++] = pid;
-
-    return pid;
+    min_cpu->cpu_rq.task_queue[min_cpu->cpu_rq.ntask] = pid;
+    min_cpu->cpu_rq.ntask++;
+	return pid;
 }
 
-/*
+/* TODO: Lab5
  * We've done the initialization for you,
  * please make sure you understand the code.
  */
 void task_init()
 {
   extern int user_entry();
-  spin_initlock(&task_lock);
-
+ spin_initlock(&task_lock);
   UTEXT_SZ = (uint32_t)(UTEXT_end - UTEXT_start);
   UDATA_SZ = (uint32_t)(UDATA_end - UDATA_start);
   UBSS_SZ = (uint32_t)(UBSS_end - UBSS_start);
   URODATA_SZ = (uint32_t)(URODATA_end - URODATA_start);
 
 	/* Initial task sturcture */
-	int i;
+        int i;
 	for (i = 0; i < NR_TASKS; i++)
 	{
 		memset(&(tasks[i]), 0, sizeof(Task));
@@ -306,7 +341,7 @@ void task_init()
 	task_init_percpu();
 }
 
-// Lab6
+// Lab6 TODO
 //
 // Please modify this function to:
 //
@@ -319,24 +354,25 @@ void task_init()
 //
 // 4. init per-CPU TSS
 //
-
 void task_init_percpu()
 {
+	
+
 	int i;
 	extern int user_entry();
 	extern int idle_entry();
 	
-	// Setup a TSS so that we get the right stack
+	// Setup a thiscpu->cpu_tss so that we get the right stack
 	// when we trap to the kernel.
 	memset(&(thiscpu->cpu_tss), 0, sizeof(thiscpu->cpu_tss));
-    thiscpu->cpu_tss.ts_esp0 = (uint32_t)percpu_kstacks[thiscpu->cpu_id] + KSTKSIZE;
+	thiscpu->cpu_tss.ts_esp0 = (uint32_t) percpu_kstacks[thiscpu->cpu_id] + KSTKSIZE;
 	thiscpu->cpu_tss.ts_ss0 = GD_KD;
 
 	// fs and gs stay in user data segment
 	thiscpu->cpu_tss.ts_fs = GD_UD | 0x03;
 	thiscpu->cpu_tss.ts_gs = GD_UD | 0x03;
 
-	/* Setup TSS in GDT */
+	/* Setup thiscpu->cpu_tss in GDT */
 	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id] = SEG16(STS_T32A, (uint32_t)(&thiscpu->cpu_tss), sizeof(struct tss_struct), 0);
 	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id].sd_s = 0;
 
@@ -349,19 +385,28 @@ void task_init_percpu()
 	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)UDATA_start, UDATA_SZ);
 	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)UBSS_start, UBSS_SZ);
 	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
-	thiscpu->cpu_task->tf.tf_eip = (uint32_t)(thiscpu->cpu_id == bootcpu->cpu_id ? user_entry:idle_entry);
 
-    thiscpu->cpu_rq.task_queue[0] = i;
+    // 1.
+    if (thiscpu->cpu_id == bootcpu->cpu_id )
+	    thiscpu->cpu_task->tf.tf_eip = user_entry;
+    else
+	    thiscpu->cpu_task->tf.tf_eip = idle_entry;
+
+    // 2.
+    //memset(&thiscpu->cpu_rq.task_queue, 0, sizeof(thiscpu->cpu_rq.task_queue));
     thiscpu->cpu_rq.cur_task = 0;
+    thiscpu->cpu_rq.task_queue[0] = i;
     thiscpu->cpu_rq.ntask = 1;
 
+    // 3.
 	/* Load GDT&LDT */
 	lgdt(&gdt_pd);
 
 
 	lldt(0);
 
-	// Load the TSS selector 
+    // 4.
+	// Load the thiscpu->cpu_tss selector 
 	ltr(GD_TSS0 + (thiscpu->cpu_id << 3));
 
 	thiscpu->cpu_task->state = TASK_RUNNING;
