@@ -94,35 +94,44 @@ int fs_init()
 */
 int fs_mount(const char* device_name, const char* path, const void* data)
 {
+    if (strcmp(device_name, fat_fs.ops->dev_name) == 0)
+    {
+        strcpy(fat_fs.path, path);
+        return fat_fs.ops->mount(&fat_fs, data);
+
+    }
     return -STATUS_EIO;
 } 
 
 /* Note: Before call ops->open() you may copy the path and flags parameters into fd object structure */
 int file_open(struct fs_fd* fd, const char *path, int flags)
 {
-
+    fd->flags = flags;
+    strcpy(fd->path, path);
+    return fat_fs.ops->open(fd);
 }
 
 int file_read(struct fs_fd* fd, void *buf, size_t len)
 {
-
+    return fat_fs.ops->read(fd, buf, len);
 }
 
 int file_write(struct fs_fd* fd, const void *buf, size_t len)
-{
-
+{ 
+    return fat_fs.ops->write(fd, buf, len);
 }
 
 int file_close(struct fs_fd* fd)
 {
-
+    return fat_fs.ops->close(fd, buf, len);
 }
 int file_lseek(struct fs_fd* fd, off_t offset)
 {
-
+    return fat_fs.ops->lseek(fd, buf, len);
 }
 int file_unlink(const char *path)
 {
+    return fat_fs.ops->unlink(fd, buf, len);
 }
 
 
