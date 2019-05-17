@@ -67,7 +67,7 @@ int sys_open(const char *file, int flags, int mode)
 int sys_close(int fd)
 {
     if (!(fd >= 0 && fd < FS_FD_MAX))
-        return -STATUS_EINVAL;
+        return -STATUS_EBADF;
 
     int ret = 0;
     
@@ -84,22 +84,64 @@ int sys_close(int fd)
 }
 int sys_read(int fd, void *buf, size_t len)
 {
-/* TODO */
+    if (!(fd >= 0 && fd < FS_FD_MAX))
+        return -STATUS_EBADF;
+    if (buf == NULL || len < 0)
+        return -STATUS_EINVAL;
+    
+    if (len == 0)
+        return 0;
+    
+    
+    struct fs_fd* fd_struct = fd_table + fd;
+    int left = fd_struct->size - fd_struct->pos;
+    return file_read(fd_struct, buf, (len > left)? left: len);
+
 }
 int sys_write(int fd, const void *buf, size_t len)
 {
-/* TODO */
+    if (!(fd >= 0 && fd < FS_FD_MAX))
+        return -STATUS_EBADF;
+    if (buf == NULL || len < 0)
+        return -STATUS_EINVAL;
+    
+    if (len == 0)
+        return 0;
+    
+    
+    struct fs_fd* fd_struct = fd_table + fd;
+    int ret = file_write(fd_struct, buf, len);
+    fd_struct->size = ((FIL*) fd_struct->data)->obj.objsize;
+    return ret;
 }
 
 /* Note: Check the whence parameter and calcuate the new offset value before do file_seek() */
 off_t sys_lseek(int fd, off_t offset, int whence)
 {
-/* TODO */
+    if (!(fd >= 0 && fd < FS_FD_MAX))
+        return -STATUS_EBADF;
+    if (buf == NULL || len < 0)
+        return -STATUS_EINVAL;
+    
+    struct fs_fd* fd_struct = fd_table + fd;
+    int new_offset = 0;
+    if (whence == SEEK_SET)
+        new_offset = offset;
+    else if (whence == SEEK_CUR)
+        new_offset = fd_struct->pos + offset;
+    else if (whence == SEEK_END)
+        new_offset = fd_struct->size + offset;
+
+    if (new_offset < 0)
+        return -STATUS_EINVAL;
+
+    return file_lseek(fd_struct, new_offset);
+
 }
 
 int sys_unlink(const char *pathname)
 {
-/* TODO */ 
+    return file_unlink(pathname);
 }
 
 
