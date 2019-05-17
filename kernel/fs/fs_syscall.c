@@ -49,12 +49,38 @@
 int sys_open(const char *file, int flags, int mode)
 {
     //We dont care the mode.
-/* TODO */
+    int fd = fd_new();
+    if (fd == -1)
+        return -STATUS_ENOSPC;
+
+    struct fs_fd* fd_struct = fd_table + fd;
+    int retVal = file_open(fd_struct, file, flags);
+    if (retVal < 0) {
+        sys_close(fd);
+        return retVal;
+    }
+    // update size
+    fd_struct->size = ((FIL*) fd_struct->data)->obj.objsize;
+    return fd;
 }
 
 int sys_close(int fd)
 {
-/* TODO */
+    if (!(fd >= 0 && fd < FS_FD_MAX))
+        return -STATUS_EINVAL;
+
+    int ret = 0;
+    
+    struct fs_fd* fd_struct = fd_table + fd;
+    if (fd_struct->ref_count == 1)
+    {
+        fd_struct->size = 0; 
+        fd_struct->pos = 0;
+        fd_struct->path[0] = '\0';
+        ret = file_close(fd_struct);
+    }
+   fd_put(fd_struct);
+    return ret;
 }
 int sys_read(int fd, void *buf, size_t len)
 {
