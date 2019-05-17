@@ -106,6 +106,7 @@ struct IDEChannelRegisters {
 	unsigned char  nIEN;  // nIEN (No Interrupt);
 } channels[2];
 
+unsigned char get_status();
 int disk_init();
 void disk_test();
 int ide_read_sectors(unsigned char drive, unsigned char numsects, unsigned int lba,

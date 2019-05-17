@@ -24,6 +24,10 @@ unsigned char ide_print_error(unsigned int drive, unsigned char err);
 unsigned char ide_ata_access(unsigned char direction, unsigned char drive, unsigned int lba, 
 		unsigned char numsects, unsigned short selector, unsigned int edi);
 
+unsigned char get_status()
+{
+    return ide_status;
+}
 
 int disk_init()
 {
