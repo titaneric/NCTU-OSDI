@@ -4,8 +4,11 @@
 // It's handel the file system APIs 
 #include <inc/stdio.h>
 #include <inc/syscall.h>
+#include <inc/string.h>
+#include <kernel/fs/fat/ff.h>
 #include <fs.h>
 
+extern struct fs_fd fd_table[FS_FD_MAX];
 /*TODO: Lab7, file I/O system call interface.*/
 /*Note: Here you need handle the file system call from user.
  *       1. When user open a new file, you can use the fd_new() to alloc a file object(struct fs_fd)
@@ -49,11 +52,25 @@
 int sys_open(const char *file, int flags, int mode)
 {
     //We dont care the mode.
-    int fd = fd_new();
+
+    int fd = -1;
+    int fd_i;
+
+    struct fs_fd* fd_struct = NULL;
+    for (fd_i = 0;fd_i < FS_FD_MAX; fd_i++)
+    {
+        fd_struct = fd_table + fd_i;
+        if (strcmp(fd_struct->path, file) == 0 && fd_struct->flags == flags)
+            break;
+    }
+
+    int fd = (fd_i == -1)? fd_new(): fd_i;
+
+    fd_struct = (fd_i == -1)? fd_table + fd: fd_get(fd);
+
     if (fd == -1)
         return -STATUS_ENOSPC;
 
-    struct fs_fd* fd_struct = fd_table + fd;
     int retVal = file_open(fd_struct, file, flags);
     if (retVal < 0) {
         sys_close(fd);
@@ -72,14 +89,15 @@ int sys_close(int fd)
     int ret = 0;
     
     struct fs_fd* fd_struct = fd_table + fd;
-    if (fd_struct->ref_count == 1)
+    
+   fd_put(fd_struct);
+   if (fd_struct->ref_count == 1)
     {
         fd_struct->size = 0; 
         fd_struct->pos = 0;
         fd_struct->path[0] = '\0';
         ret = file_close(fd_struct);
     }
-   fd_put(fd_struct);
     return ret;
 }
 int sys_read(int fd, void *buf, size_t len)
@@ -120,7 +138,7 @@ off_t sys_lseek(int fd, off_t offset, int whence)
 {
     if (!(fd >= 0 && fd < FS_FD_MAX))
         return -STATUS_EBADF;
-    if (buf == NULL || len < 0)
+    if (offset < 0 || whence < 0)
         return -STATUS_EINVAL;
     
     struct fs_fd* fd_struct = fd_table + fd;
@@ -134,7 +152,8 @@ off_t sys_lseek(int fd, off_t offset, int whence)
 
     if (new_offset < 0)
         return -STATUS_EINVAL;
-
+    
+    fd_struct->pos = new_offset;
     return file_lseek(fd_struct, new_offset);
 
 }
