@@ -123,15 +123,29 @@ int file_write(struct fs_fd* fd, const void *buf, size_t len)
 
 int file_close(struct fs_fd* fd)
 {
-    return fat_fs.ops->close(fd, buf, len);
+    return fat_fs.ops->close(fd);
 }
 int file_lseek(struct fs_fd* fd, off_t offset)
 {
-    return fat_fs.ops->lseek(fd, buf, len);
+    return fat_fs.ops->lseek(fd, offset);
 }
 int file_unlink(const char *path)
 {
-    return fat_fs.ops->unlink(fd, buf, len);
+    int retVal = fat_fs.ops->unlink(path);
+    if (retVal == 0)
+    {
+        int fd_i;
+        
+        struct fs_fd* fd_struct = NULL;
+        for (fd_i = 0; fd_i < FS_FD_MAX;fd_i++)
+        {
+            fd_struct = fd_table + fd_i;
+            if (strcmp(fd_struct->path, path) == 0)
+                memset(fd_struct, 0, sizeof(struct fs_fd));
+	}
+
+    }
+    return retVal;
 }
 
 
