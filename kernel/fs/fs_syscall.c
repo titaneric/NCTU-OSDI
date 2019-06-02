@@ -101,9 +101,11 @@ int sys_read(int fd, void *buf, size_t len)
         return 0;
     
     
-    struct fs_fd* fd_struct = fd_table + fd;
+    struct fs_fd* fd_struct = fd_get(fd);
     int left = fd_struct->size - fd_struct->pos;
-    return file_read(fd_struct, buf, (len > left)? left: len);
+    int ret = file_read(fd_struct, buf, (len > left)? left: len);
+    fd_put(fd_struct);
+    return ret;
 
 }
 int sys_write(int fd, const void *buf, size_t len)
@@ -117,9 +119,10 @@ int sys_write(int fd, const void *buf, size_t len)
         return 0;
     
     
-    struct fs_fd* fd_struct = fd_table + fd;
+    struct fs_fd* fd_struct = fd_get(fd);
     int ret = file_write(fd_struct, buf, len);
     fd_struct->size = ((FIL*) fd_struct->data)->obj.objsize;
+    fd_put(fd_struct);
     return ret;
 }
 
@@ -131,7 +134,7 @@ off_t sys_lseek(int fd, off_t offset, int whence)
     if (offset < 0 || whence < 0)
         return -STATUS_EINVAL;
     
-    struct fs_fd* fd_struct = fd_table + fd;
+    struct fs_fd* fd_struct = fd_get(fd);
     int new_offset = 0;
     if (whence == SEEK_SET)
         new_offset = offset;
@@ -144,7 +147,9 @@ off_t sys_lseek(int fd, off_t offset, int whence)
         return -STATUS_EINVAL;
     
     fd_struct->pos = new_offset;
-    return file_lseek(fd_struct, new_offset);
+    int ret = file_lseek(fd_struct, new_offset);
+    fd_put(fd_struct);
+    return ret;
 
 }
 
