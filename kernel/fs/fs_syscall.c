@@ -53,24 +53,12 @@ int sys_open(const char *file, int flags, int mode)
 {
     //We dont care the mode.
 
-    int fd = -1;
-    int fd_i;
-
-    struct fs_fd* fd_struct = NULL;
-    for (fd_i = 0;fd_i < FS_FD_MAX; fd_i++)
-    {
-        fd_struct = fd_table + fd_i;
-        if (strcmp(fd_struct->path, file) == 0 && fd_struct->flags == flags)
-            break;
-    }
-
-    int fd = (fd_i == -1)? fd_new(): fd_i;
-
-    fd_struct = (fd_i == -1)? fd_table + fd: fd_get(fd);
+    int fd = fd_new();
 
     if (fd == -1)
         return -STATUS_ENOSPC;
 
+    struct fs_fd* fd_struct = fd_table + fd;
     int retVal = file_open(fd_struct, file, flags);
     if (retVal < 0) {
         sys_close(fd);
@@ -86,11 +74,11 @@ int sys_close(int fd)
     if (!(fd >= 0 && fd < FS_FD_MAX))
         return -STATUS_EBADF;
 
+
     int ret = 0;
     
     struct fs_fd* fd_struct = fd_table + fd;
     
-   fd_put(fd_struct);
    if (fd_struct->ref_count == 1)
     {
         fd_struct->size = 0; 
@@ -98,6 +86,8 @@ int sys_close(int fd)
         fd_struct->path[0] = '\0';
         ret = file_close(fd_struct);
     }
+
+    fd_put(fd_struct);
     return ret;
 }
 int sys_read(int fd, void *buf, size_t len)

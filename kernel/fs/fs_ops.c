@@ -62,13 +62,13 @@ int fat_mkfs(const char* device_name)
 */
 int fat_open(struct fs_fd* file)
 {
-   int elmfat_flag;
-   if (file->flags == OR_RDONLY)
+   int flags = 0;
+   if (file->flags == O_RDONLY)
       flags = FA_READ;
    if (file->flags & O_WRONLY)
       flags |= FA_WRITE;
    if (file->flags & O_RDWR)
-      flags |= (FA_READ | FA_WRITE)
+      flags |= (FA_READ | FA_WRITE);
    if (file->flags & O_ACCMODE)
       flags &= 0x3;
    if ((file->flags & O_CREAT) && !(file->flags & O_TRUNC))
@@ -76,11 +76,11 @@ int fat_open(struct fs_fd* file)
    if (file->flags & O_TRUNC)
       flags |= FA_CREATE_ALWAYS;
    
-   int ret = f_open(file->data, file->path, flags)
+   int ret = f_open(file->data, file->path, flags);
    if (file->flags & O_APPEND)
       fat_lseek(file, ((FIL*)file->data)->obj.objsize);
 
-   return ret;
+   return -ret;
 }
 
 int fat_close(struct fs_fd* file)
@@ -116,7 +116,7 @@ int fat_lseek(struct fs_fd* file, off_t offset)
 {
    return -f_lseek(file->data, offset);
 }
-int fat_unlink(struct fs_fd* file, const char *pathname)
+int fat_unlink(const char *pathname)
 {
   return -f_unlink(pathname); 
 }
