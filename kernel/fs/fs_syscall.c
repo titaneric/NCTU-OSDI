@@ -72,7 +72,7 @@ int sys_open(const char *file, int flags, int mode)
 int sys_close(int fd)
 {
     if (!(fd >= 0 && fd < FS_FD_MAX))
-        return -STATUS_EBADF;
+        return -STATUS_EINVAL;
 
 
     int ret = 0;

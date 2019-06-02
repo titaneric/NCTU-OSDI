@@ -83,6 +83,7 @@ DSTATUS disk_status (BYTE pdrv)
 /* Note: You can create a function under disk.c  
  *       to help you get the disk status.
  */
+  /*
   unsigned char status = get_status();
   DSTATUS converted_status;
   switch(status)
@@ -103,6 +104,8 @@ DSTATUS disk_status (BYTE pdrv)
         converted_status = 0;
   }
   return converted_status;
+  */
+  return 0;
 }
 
 /**

@@ -191,10 +191,9 @@ int file_unlink(const char *path)
     {
         int fd_i;
         
-        struct fs_fd* fd_struct = NULL;
-        for (fd_i = 0; fd_i < FS_FD_MAX;fd_i++)
+        struct fs_fd* fd_struct = fd_table;
+        for (fd_i = 0; fd_i < FS_FD_MAX;fd_i++, fd_struct++)
         {
-            fd_struct = fd_table + fd_i;
             if (strcmp(fd_struct->path, path) == 0)
                 memset(fd_struct, 0, sizeof(struct fs_fd));
 	}
