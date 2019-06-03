@@ -158,6 +158,19 @@ int sys_unlink(const char *pathname)
     return file_unlink(pathname);
 }
 
+int sys_opendir(DIR *dir, const char *pathname)
+{
+    return file_opendir(dir, pathname);
+}
 
+int sys_readdir(DIR *dir, FILINFO *filinfo)
+{
+    return file_readdir(dir, filinfo);
+}
+
+int sys_closedir(DIR *dir)
+{
+    return file_closedir(dir);
+}
               
 
