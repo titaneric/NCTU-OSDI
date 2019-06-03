@@ -545,13 +545,23 @@ int ls(int argc, char **argv)
 
 int rm(int argc, char **argv)
 {
+    if (argc >= 1)
+    {
+       if (unlink(argv[1]) < 0)
+       {
+           cprintf("Cannot remove %s\n", argv[1]);
+       }
+    }
     return 0;
 }
 
 int touch(int argc, char **argv)
 {
-    int fd = open(argv[1], O_WRONLY | O_CREAT, 0);
-    close(fd);
+    if (argc >= 1)
+    {
+        int fd = open(argv[1], O_WRONLY | O_CREAT, 0);
+        close(fd);
+    }
     return 0;
 }
 void shell()
