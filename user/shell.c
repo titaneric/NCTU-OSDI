@@ -28,6 +28,11 @@ int filetest4(int argc, char **argv);
 int filetest5(int argc, char **argv);
 int spinlocktest(int argc, char **argv);
 
+int ls(int argc, char **argv);
+int rm(int argc, char **argv);
+int touch(int argc, char **argv);
+
+
 
 struct Command commands[] = {
   { "help", "Display this list of commands", mon_help },
@@ -42,7 +47,10 @@ struct Command commands[] = {
   { "filetest3", "Laqrge block test", filetest3},
   { "filetest4", "Error test", filetest4},
   { "filetest5", "unlink test", filetest5},
-  { "spinlocktest", "Test spinlock", spinlocktest }
+  { "spinlocktest", "Test spinlock", spinlocktest },
+  { "ls", "List Directory", ls },
+  { "rm", "Remove file", rm },
+  { "touch", "Make file", touch }
 };
 const int NCOMMANDS = (sizeof(commands)/sizeof(commands[0]));
 
@@ -530,6 +538,22 @@ int fs_speed_test(int argc, char **argv)
     }
 }
 
+int ls(int argc, char **argv)
+{
+    return 0;
+}
+
+int rm(int argc, char **argv)
+{
+    return 0;
+}
+
+int touch(int argc, char **argv)
+{
+    int fd = open(argv[1], O_WRONLY | O_CREAT, 0);
+    close(fd);
+    return 0;
+}
 void shell()
 {
   char *buf;

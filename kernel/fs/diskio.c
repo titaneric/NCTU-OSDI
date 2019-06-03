@@ -126,7 +126,7 @@ DRESULT disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
     /* TODO */
   for(;cur_sector < sector + count ;ptr += SECTOR_SIZE, cur_sector++) 
   {
-   err = ide_read_sectors(DISK_ID, 1, cur_sector, ptr);
+   err = ide_read_sectors(DISK_ID, 1, cur_sector, (unsigned int) ptr);
   }
   return err;
 }
@@ -149,7 +149,7 @@ DRESULT disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count)
     /* TODO */
   for(;cur_sector < sector + count ;ptr += SECTOR_SIZE, cur_sector++) 
   {
-   err = ide_write_sectors(DISK_ID, 1, cur_sector, ptr);
+   err = ide_write_sectors(DISK_ID, 1, cur_sector, (unsigned int) ptr);
   }
   return err;
 }

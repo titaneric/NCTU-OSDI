@@ -47,7 +47,7 @@ extern struct fs_dev fat_fs;
 */
 int fat_mount(struct fs_dev *fs, const void* data)
 {
-    return -f_mount(fs->data, fs->path, 1);
+    return -f_mount((FATFS *) fs->data, fs->path, 1);
 }
 
 /* Note: Just call f_mkfs at root path '/' */
