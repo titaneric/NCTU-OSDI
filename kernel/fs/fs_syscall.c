@@ -56,7 +56,7 @@ int sys_open(const char *file, int flags, int mode)
     int fd = fd_new();
 
     if (fd == -1)
-        return -STATUS_ENOSPC;
+        return -1;
 
     struct fs_fd* fd_struct = fd_table + fd;
     int retVal = file_open(fd_struct, file, flags);
@@ -158,7 +158,7 @@ int sys_unlink(const char *pathname)
     return file_unlink(pathname);
 }
 
-int sys_opendir(DIR *dir, const char *pathname)
+int sys_opendir(DIR *dir, const TCHAR *pathname)
 {
     return file_opendir(dir, pathname);
 }

@@ -202,7 +202,7 @@ int file_unlink(const char *path)
     return mapposix(retVal);
 }
 
-int file_opendir(DIR *dir, const char *pathname)
+int file_opendir(DIR *dir, const TCHAR *pathname)
 {
     return mapposix(fat_fs.ops->opendir(dir, pathname));
 }

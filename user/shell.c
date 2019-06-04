@@ -542,8 +542,8 @@ int fs_speed_test(int argc, char **argv)
 int ls(int argc, char **argv)
 {
     
-   DIR dir = {0};
-   FILINFO finfo = {0};
+   DIR dir;
+   FILINFO finfo;
 
    if ( argc >= 1 ) {
 	if ( opendir(&dir, argv[1]) < 0 ) {
@@ -552,10 +552,11 @@ int ls(int argc, char **argv)
 	}
 	readdir(&dir, &finfo);
 	while ( finfo.fname[0] ) {
-            cprintf("%s type:%s size:%d\n", finfo.fname, finfo.fattrib & AM_DIR ? "DIR":"FILE", finfo.fsize);
+            cprintf("%s type:%s size:%d\n", finfo.fname, (finfo.fattrib & AM_DIR) ? "DIR":"FILE", finfo.fsize);
             readdir(&dir, &finfo);
         }
     }
+    return 0;
 }
 
 int rm(int argc, char **argv)
@@ -576,7 +577,10 @@ int touch(int argc, char **argv)
     {
         int fd = open(argv[1], O_WRONLY | O_CREAT, 0);
         if (fd < 0)
+        {
+	    cprintf("Touch failed\n");
 	    goto finished;
+        }
         close(fd);
     }
     finished:
