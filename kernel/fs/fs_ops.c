@@ -69,8 +69,6 @@ int fat_open(struct fs_fd* file)
       flags |= FA_WRITE;
    if (file->flags & O_RDWR)
       flags |= (FA_READ | FA_WRITE);
-   if (file->flags & O_ACCMODE)
-      flags &= 0x3;
    if ((file->flags & O_CREAT) && !(file->flags & O_TRUNC))
       flags |= FA_CREATE_NEW;
    if (file->flags & O_TRUNC)
@@ -85,12 +83,12 @@ int fat_open(struct fs_fd* file)
 
 int fat_close(struct fs_fd* file)
 {
-   return -f_close(file->data);
+   return -f_close((FIL *) file->data);
 }
 int fat_read(struct fs_fd* file, void* buf, size_t count)
 {
    unsigned int br;
-   int ret = f_read(file->data, buf, count, &br);
+   int ret = f_read((FIL *)file->data, buf, count, &br);
 
    if (ret)
       return -ret;
@@ -101,20 +99,20 @@ int fat_read(struct fs_fd* file, void* buf, size_t count)
 int fat_write(struct fs_fd* file, const void* buf, size_t count)
 {
    unsigned int bw;
-   int ret = f_write(file->data, buf, count, &bw);
+   int ret = f_write((FIL *)file->data, buf, count, &bw);
 
    if (ret)
       return -ret;
 
    file->pos += bw;
    if (file->pos > file->size)
-      file->size= file->pos;
+      file->size = file->pos;
    return bw;
 
 }
 int fat_lseek(struct fs_fd* file, off_t offset)
 {
-   return -f_lseek(file->data, offset);
+   return -f_lseek((FIL *)file->data, offset);
 }
 int fat_unlink(const char *pathname)
 {
