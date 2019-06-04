@@ -541,8 +541,21 @@ int fs_speed_test(int argc, char **argv)
 
 int ls(int argc, char **argv)
 {
-    DIR dir;
-    return 0;
+    
+   DIR dir = {0};
+   FILINFO finfo = {0};
+
+   if ( argc >= 1 ) {
+	if ( opendir(&dir, argv[1]) < 0 ) {
+		cprintf("File or Path not exist.\n");
+		return 0;
+	}
+	readdir(&dir, &finfo);
+	while ( finfo.fname[0] ) {
+            cprintf("%s type:%s size:%d\n", finfo.fname, finfo.fattrib & AM_DIR ? "DIR":"FILE", finfo.fsize);
+            readdir(&dir, &finfo);
+        }
+    }
 }
 
 int rm(int argc, char **argv)
