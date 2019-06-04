@@ -142,6 +142,9 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
   case SYS_readdir:
     retVal = sys_readdir(a1, a2);
     break;
+  case SYS_stat:
+    retVal = sys_stat(a1, a2);
+    break;
   default:
     retVal = -1; //Not yet implemented
     break;

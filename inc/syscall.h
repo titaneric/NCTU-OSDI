@@ -26,6 +26,7 @@ enum {
   SYS_opendir,
   SYS_closedir,
   SYS_readdir,
+  SYS_stat,
   NSYSCALLS
 };
 
@@ -59,7 +60,9 @@ int sys_read(int fd, void *buf, size_t len);
 int sys_write(int fd, const void *buf, size_t len);
 off_t sys_lseek(int fd, off_t offset, int whence);
 int sys_unlink(const char *pathname);
-int sys_opendir(DIR *dir, const char *pathname);
+
+int sys_opendir(DIR *dir, const TCHAR *pathname);
 int sys_closedir(DIR *dir);
 int sys_readdir(DIR *dir, FILINFO *finfno);
+int sys_stat(const TCHAR* path, FILINFO* fno);
 #endif

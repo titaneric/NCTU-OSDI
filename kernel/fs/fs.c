@@ -217,6 +217,10 @@ int file_closedir(DIR *dir)
     return mapposix(fat_fs.ops->closedir(dir));
 }
 
+int file_stat(const TCHAR* pathname, FILINFO* filinfo)
+{
+    return mapposix(fat_fs.ops->stat(pathname, filinfo));
+}
 /**
  * @ingroup Fd
  * This function will allocate a file descriptor.

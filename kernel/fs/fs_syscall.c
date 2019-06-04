@@ -173,4 +173,7 @@ int sys_closedir(DIR *dir)
     return file_closedir(dir);
 }
               
-
+int sys_stat(const TCHAR* pathname, FILINFO* filinfo)
+{
+   return file_stat(pathname, filinfo);
+}

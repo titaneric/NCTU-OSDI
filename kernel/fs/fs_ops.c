@@ -130,6 +130,10 @@ int fat_closedir(DIR *dir)
 {
   return -f_closedir(dir);
 }
+int fat_stat(const TCHAR* pathname, FILINFO* filinfo)
+{
+  return -f_stat(pathname, filinfo);
+}
 struct fs_ops elmfat_ops = {
     .dev_name = "elmfat",
     .mount = fat_mount,
@@ -142,7 +146,8 @@ struct fs_ops elmfat_ops = {
     .unlink = fat_unlink,
     .opendir = fat_unlink,
     .closedir = fat_closedir,
-    .readdir = fat_readdir
+    .readdir = fat_readdir,
+    .stat = fat_stat
 };
 
 

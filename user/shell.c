@@ -575,8 +575,12 @@ int touch(int argc, char **argv)
     if (argc >= 1)
     {
         int fd = open(argv[1], O_WRONLY | O_CREAT, 0);
+        if (fd < 0)
+	    goto finished;
         close(fd);
     }
+    finished:
+
     return 0;
 }
 void shell()

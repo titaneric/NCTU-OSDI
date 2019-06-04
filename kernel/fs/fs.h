@@ -58,6 +58,7 @@ struct fs_ops
     int (*opendir)	(DIR *dir, const char *pathname);
     int (*closedir)	(DIR *dir);
     int (*readdir)	(DIR *dir, FILINFO *filinfo);
+    int (*stat)		(const TCHAR *pathname, FILINFO* filinfo);
 
 };
 
